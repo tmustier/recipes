@@ -5,7 +5,7 @@ description: Turns a recipe into an HTML "toolchart" page — a Cooking for Engi
 
 # Recipe Toolchart
 
-The output is one HTML page in `recipes/` that works on phones, tablets and desktops. All styling and layout lives in the shared [`recipes/toolchart.css`](../../../recipes/toolchart.css), and [`recipes/toolchart.js`](../../../recipes/toolchart.js) keeps the screen on while a recipe is open. Your job is only the recipe content. [`recipes/beef-wellington.html`](../../../recipes/beef-wellington.html) is a complete worked example.
+The output is one HTML page in `recipes/` that works on phones, tablets and desktops. All styling and layout lives in the shared [`recipes/toolchart.css`](../../../recipes/toolchart.css), and [`recipes/toolchart.js`](../../../recipes/toolchart.js) keeps the screen on and numbers the steps for the phone layout. Your job is only the recipe content. [`recipes/beef-wellington.html`](../../../recipes/beef-wellington.html) is a complete worked example.
 
 ## Workflow
 
@@ -29,6 +29,7 @@ Rules:
 - An ingredient used in two places (e.g. cheese in the sauce and on top) becomes two ingredient rows with the quantity split between them.
 - Something added late, like salt to taste at the end, is an input of the step where it's added. The layout will draw an arrow carrying it across.
 - Prep with no dependencies (chopping, whisking, measuring) comes straight off its raw ingredients, so it lands in the first column and reads as "do this while waiting".
+- Show every prep job. List ingredients as you buy them (`Shallots`, not `Shallots, minced`) and make the chopping, mincing, peeling, beating or thawing a step, or fold it into the step that first uses the ingredient. Notes in `<small>` are for variety, size or substitutes, never for work the cook has to do.
 
 ## Markup
 
@@ -80,6 +81,6 @@ If you can render HTML (e.g. Playwright with a headless Chromium), take screensh
 - Dashed arrows appear only where an input waits for a longer branch.
 - No cell is crammed or empty.
 
-Mis-nesting doesn't produce an error, it just draws the wrong chart, so compare the picture against your nested expression. On narrow phones the chart scrolls sideways; that's expected.
+Mis-nesting doesn't produce an error, it just draws the wrong chart, so compare the picture against your nested expression. On phones (under 640 px wide) the chart becomes a numbered list in cooking order, each step after the ingredients it adds; check that it reads sensibly top to bottom. Turning the phone sideways shows the full chart.
 
 The font (Fragment Mono, the same as mustier.ai) is self-hosted in `recipes/`. It has no bold, so `<b>` renders as brick-coloured regular text.
