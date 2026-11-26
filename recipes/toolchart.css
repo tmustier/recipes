@@ -83,11 +83,9 @@ body > header span{color:var(--ink)}
 .do p b,.do p strong{color:var(--accent)}
 .do time{font-size:12px;font-style:italic;color:var(--muted)}
 
-/* Ingredient = [qty / name / note] [pass-through filler] */
-.ing{display:grid;grid-template-columns:var(--ingw) 1fr;align-content:center;background:var(--paper)}
-.ing > *{grid-column:1;padding:0 var(--pad);line-height:1.35}
-.ing > :first-child{padding-top:9px}
-.ing > :last-child{padding-bottom:9px}
+/* Ingredient = [label: qty / name / note] [pass-through filler] */
+.ing{display:flex;background:var(--paper)}
+.ing > .label{flex:none;width:var(--ingw);overflow-wrap:anywhere;padding:9px var(--pad);display:flex;flex-direction:column;justify-content:center;line-height:1.35;background:var(--paper)}
 .ing b{color:var(--muted);font-size:12px}
 .ing span{font-size:13px}
 .ing small{font-size:12px;font-style:italic;color:var(--muted)}
@@ -106,34 +104,21 @@ body > header span{color:var(--ink)}
 }
 .toolchart > .step::after{display:none}
 .toolchart > .step > .do{flex-grow:1}
-.ing::after{content:"";grid-column:2;grid-row:1 / span 3;padding:0}
+.ing::after{content:"";padding:0}
 
 /* ───── responsive ───── */
 @media (max-width:1024px){ :root{--ingw:160px;--colmin:130px;--pad:10px} }
+/* Phones: two columns at a time, a step and what feeds it, swiped one column at a time.
+   Ingredient labels stay pinned on the left until the step that uses them. */
 @media (max-width:640px){
-  :root{--ingw:124px;--colmin:156px;--pad:9px}
+  :root{--pad:9px}
   body{padding:max(24px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 48px max(12px,env(safe-area-inset-left))}
   body > header{gap:2px 16px;margin-bottom:20px}
-}
-/* Phones: the chart becomes a list in cooking order. Each step follows the
-   ingredients it adds; toolchart.js numbers steps and names the earlier steps they use.
-   Turning the phone sideways shows the full chart. */
-.do .n,.do .from{display:none}
-@media (max-width:640px){
-  .toolchart{display:flex;flex-direction:column;border:0;overflow:visible;background:none}
-  .toolchart .step,.toolchart .in{display:contents}
-  .in > * + *{border-top:0}
-  .step::after,.ing::after{display:none}
-  .toolchart .step[data-wait]::after{display:block;flex:none;content:attr(data-wait);background:none;border:0;margin:-22px 0 26px;padding:0 12px 0 calc(12px + 1.6em);text-align:left;font:italic 400 12px/1.4 var(--font);color:var(--muted)}
-  .ing{grid-template-columns:6.5em 1fr;column-gap:12px;padding:3px 12px}
-  .ing > *{grid-column:2;padding:0}
-  .ing > b{grid-column:1;grid-row:1 / span 2;padding:0;font-size:13px}
-  .ing > :first-child,.ing > :last-child{padding-top:0;padding-bottom:0}
-  .do + .ing,.toolchart > .step > .in > .ing:first-child{margin-top:0}
-  .do,.toolchart > .step > .do{width:auto;margin:10px 0 26px;border:0;padding:12px;justify-content:flex-start}
-  .do .n{display:inline-block;min-width:1.6em;color:var(--muted)}
-  .do .from{display:block;font-size:12px;font-style:italic;color:var(--muted);margin:-2px 0 2px 1.6em}
-  .do p,.do time{margin-left:1.6em}
+  .toolchart{--ingw:50cqw;--colmin:50cqw;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .toolchart::-webkit-scrollbar{display:none}
+  .do,.ing{scroll-snap-align:start}
+  .do{justify-content:flex-start}
+  .ing > .label{position:sticky;left:0;z-index:1;box-shadow:1px 0 0 var(--line)}
 }
 @media (max-height:500px) and (orientation:landscape){ :root{--ingw:150px;--colmin:120px;--pad:8px} body{padding-top:12px} }
 @media print{

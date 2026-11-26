@@ -66,6 +66,6 @@ Run `node build.mjs`. A malformed file stops the build with the file and line nu
 - Dashed arrows appear only where an input waits for a longer branch.
 - No cell is crammed or empty.
 
-Mis-nesting doesn't produce an error, it just draws the wrong chart, so compare the picture against the recipe. On phones (under 640 px wide) the chart becomes a numbered list in cooking order, each step after the ingredients it adds; check that it reads sensibly top to bottom. Turning the phone sideways shows the full chart.
+Mis-nesting doesn't produce an error, it just draws the wrong chart, so compare the picture against the recipe. On phones (under 640 px wide) the chart shows one step column at a time and swipes sideways, with each ingredient pinned on the left until the step that uses it.
 
 The font (Fragment Mono, the same as mustier.ai) is self-hosted in `recipes/`. It has no bold, so `**text**` renders as brick-coloured regular text.

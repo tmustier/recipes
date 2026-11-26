@@ -115,7 +115,7 @@ const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
 function renderNode(n, pad) {
   if (!n.inputs) {
     const note = [n.note, n.alt && formatQuantity(n.alt)].filter(Boolean).join(" · ");
-    return `${pad}<div class="ing"><b>${esc(formatQuantity(n.qty))}</b><span>${esc(n.name)}</span>${note ? `<small>${esc(note)}</small>` : ""}</div>\n`;
+    return `${pad}<div class="ing"><div class="label"><b>${esc(formatQuantity(n.qty))}</b><span>${esc(n.name)}</span>${note ? `<small>${esc(note)}</small>` : ""}</div></div>\n`;
   }
   const cls = n.type === "prep" ? "step" : `step ${n.type}`;
   const wait = n.wait ? ` data-wait="${esc(n.wait)}"` : "";

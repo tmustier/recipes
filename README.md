@@ -1,6 +1,6 @@
 # Recipes
 
-My recipes as one-page "toolcharts": each recipe is a single rectangular flowchart, with ingredients down the left and steps to the right, in the style of Cooking for Engineers. Each recipe is written as a small indented text file (`recipes/<name>.recipe`) and rendered as a page that works on a phone, tablet or desktop and keeps the screen on while it's open. On phones it shows as a numbered list of steps.
+My recipes as one-page "toolcharts": each recipe is a single rectangular flowchart, with ingredients down the left and steps to the right, in the style of Cooking for Engineers. Each recipe is written as a small indented text file (`recipes/<name>.recipe`) and rendered as a page that works on a phone, tablet or desktop and keeps the screen on while it's open. On phones you swipe through it one step at a time.
 
 Live at **https://recipes.mustier.ai**. Forked from [lucasmeijer/recipes](https://github.com/lucasmeijer/recipes).
 
