@@ -1,14 +1,14 @@
-// Builds the site into dist/: copies everything in recipes/ (pages, toolchart.css, toolchart.js)
-// and writes an index page listing the recipe pages.
+// Builds the site into dist/: renders each recipes/<name>.recipe to <name>.html (and its data to <name>.json),
+// copies the shared files in recipes/ (toolchart.css, toolchart.js, fonts), and writes an index page.
 // No dependencies. Run with: node build.mjs
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { parseRecipe, renderPage, ingredients } from "./recipe.mjs";
 
 const SRC = "recipes", OUT = "dist";
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);
 
-const text = html => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // date a recipe was first added, from git; falls back to today
@@ -20,15 +20,17 @@ function added(file) {
   return new Date().toISOString().slice(0, 10);
 }
 
-for (const f of readdirSync(SRC)) copyFileSync(`${SRC}/${f}`, `${OUT}/${f}`);
+for (const f of readdirSync(SRC).filter(f => !f.endsWith(".recipe"))) copyFileSync(`${SRC}/${f}`, `${OUT}/${f}`);
 
-const recipes = readdirSync(SRC).filter(f => f.endsWith(".html")).map(f => {
-  const html = readFileSync(`${SRC}/${f}`, "utf8");
-  const header = html.match(/<header>([\s\S]*?)<\/header>/)?.[1] ?? "";
-  const title = text(header.match(/<h1>([\s\S]*?)<\/h1>/)?.[1] ?? "") || text(html.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? f);
-  const facts = [...header.matchAll(/<span>([\s\S]*?)<\/span>/g)].map(m => text(m[1])).filter(s => !/^Equipment/i.test(s));
-  const ingredients = [...html.matchAll(/<div class="ing">[\s\S]*?<span>([\s\S]*?)<\/span>/g)].map(m => text(m[1]));
-  return { href: f.replace(/\.html$/, ""), title, facts, date: added(`${SRC}/${f}`), search: [title, ...ingredients].join(" ").toLowerCase() };
+const recipes = readdirSync(SRC).filter(f => f.endsWith(".recipe")).map(f => {
+  const name = f.replace(/\.recipe$/, "");
+  const r = parseRecipe(readFileSync(`${SRC}/${f}`, "utf8"), `${SRC}/${f}`);
+  writeFileSync(`${OUT}/${name}.html`, renderPage(r));
+  writeFileSync(`${OUT}/${name}.json`, JSON.stringify(r, null, 2) + "\n");
+  return {
+    href: name, title: r.title, facts: r.facts.map(([k, v]) => `${k} ${v}`), date: added(`${SRC}/${f}`),
+    search: [r.title, ...ingredients(r).map(i => i.name)].join(" ").toLowerCase(),
+  };
 }).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title));
 
 // copied to the clipboard by the button on the home page
