@@ -1,6 +1,5 @@
-# Builds the site and deploys it to Cloudflare Pages on every push to main.
-# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (skipped if missing, e.g. in forks).
-# The Pages project name defaults to "recipes"; override it with the repo variable CF_PAGES_PROJECT.
+# Builds the site and deploys it to Cloudflare Workers (static assets, see wrangler.jsonc) on every push to main.
+# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (skipped if missing).
 name: Deploy
 on:
   push:
@@ -22,4 +21,4 @@ jobs:
           node-version: 22
       - run: node build.mjs
       - if: env.CLOUDFLARE_API_TOKEN != ''
-        run: npx -y wrangler@4 pages deploy dist --project-name "${{ vars.CF_PAGES_PROJECT || 'recipes' }}" --branch main
+        run: npx -y wrangler@4 deploy
