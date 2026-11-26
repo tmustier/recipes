@@ -78,7 +78,6 @@ body > header span{color:var(--ink)}
   background:var(--c);
 }
 .do h3{margin:0;font-size:14px;font-weight:400;letter-spacing:.02em}
-.do h3::before{content:"· ";color:var(--accent)}
 .finish > .do h3{color:var(--accent)}
 .do p{margin:0;font-size:13px;line-height:1.5}
 .do p b,.do p strong{color:var(--accent)}
