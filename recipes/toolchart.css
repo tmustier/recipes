@@ -1,45 +1,45 @@
-/* Shared styling for every recipe page. Changing it changes all recipes. */
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Kalam:wght@400;700&display=swap");
+/* Shared styling for every recipe page. Changing it changes all recipes.
+   Matches mustier.ai: Fragment Mono (regular + italic, no bold), paper, hairlines, brick accent. */
+@font-face{font-family:"Fragment Mono";src:url("fragment-mono-regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Fragment Mono";src:url("fragment-mono-italic.woff2") format("woff2");font-weight:400;font-style:italic;font-display:swap}
 
 :root{
-  --font:Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --font-head:Kalam,"Comic Sans MS",cursive;
-  --fs:15px;
-  --paper:#fdfcf3; --sheet:#fffef8; --ink:#1f2a44; --muted:#6a7593;
-  --rule:#3a5a9a;   /* outer frame */
-  --line:#a9bbdf;   /* lines between cells */
-  --hold:#8fa3cc;   /* pass-through arrows */
-  --prep:#2f6fd6; --heat:#d65a2f; --combine:#8a4fd6; --finish:#2f9a5a;
-  --tint:9%;
-  --ingw:190px;     /* ingredient column */
-  --colmin:150px;   /* narrowest a step column may get */
+  --font:"Fragment Mono",ui-monospace,monospace;
+  --fs:14px;
+  --ink:#1d1d1b; --muted:#8b8b85; --faint:#b9b9b2; --line:#e6e6e1; --paper:#fbfbf9;
+  --accent:#96341f;  /* brick */
+  --rule:var(--line);
+  --heat:#f6efeb; --combine:#f2f2ee; --prep:var(--paper); --finish:var(--paper);
+  --ingw:200px;     /* ingredient column */
+  --colmin:160px;   /* narrowest a step column may get */
   --pad:12px;
 }
 
 /* ───── page ───── */
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;background:var(--paper)}
 body{
-  margin:0;font:var(--fs)/1.4 var(--font);color:var(--ink);
-  background:linear-gradient(rgba(58,90,154,.12) 1px,transparent 1px) 0 0/100% 28px,var(--paper);
-  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left));
+  margin:0;font:400 var(--fs)/1.55 var(--font);color:var(--ink);background:var(--paper);
+  text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;
+  padding:max(48px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) 72px max(24px,env(safe-area-inset-left));
   max-width:1320px;margin-inline:auto;
 }
+b,strong{font-weight:400}
+a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--faint);text-underline-offset:3px}
+a:hover{color:var(--accent);text-decoration-color:var(--accent)}
 
 /* ───── one-line header ───── */
-body > header{
-  display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;
-  border:1.5px solid var(--rule);background:var(--sheet);padding:10px 14px;margin-bottom:12px;
-}
-body > header > *{margin:0;font-size:1em;font-weight:400}
-body > header h1{font:700 1.2em/1.2 var(--font-head)}
-body > header em{font-style:normal;color:var(--muted);margin-right:4px}
+body > header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;margin-bottom:32px;font-size:13px;color:var(--muted)}
+body > header > *{margin:0;font-weight:400}
+body > header h1{flex-basis:100%;font-size:14px;color:var(--ink);letter-spacing:.02em;margin-bottom:8px}
+body > header em{font-style:normal;color:var(--faint);margin-right:6px}
+body > header span{color:var(--ink)}
 
 /* ───── the chart ───── */
 .toolchart{
   container-type:inline-size;
   overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;
-  border:1.5px solid var(--rule);background:var(--sheet);
+  border:1px solid var(--rule);background:var(--paper);
   /* how many step columns → deepest nesting of .step (up to 12) */
   --cols:1;
 }
@@ -74,25 +74,24 @@ body > header em{font-style:normal;color:var(--muted);margin-right:4px}
   flex:none;width:var(--colw);
   border-left:1px solid var(--line);margin-left:-1px;
   padding:12px var(--pad);
-  display:flex;flex-direction:column;justify-content:center;gap:3px;
-  background:color-mix(in srgb,var(--c) var(--tint),var(--sheet));
+  display:flex;flex-direction:column;justify-content:center;gap:4px;
+  background:var(--c);
 }
-.do h3{margin:0;font:700 1.35em/1.05 var(--font-head)}
-.do p{margin:0;font-size:.93em;line-height:1.4;color:color-mix(in srgb,var(--ink) 85%,var(--sheet))}
-.do p b,.do p strong{color:var(--ink)}
-.do time{font-size:.82em;font-weight:700;color:var(--muted)}
+.do h3{margin:0;font-size:14px;font-weight:400;letter-spacing:.02em}
+.do h3::before{content:"· ";color:var(--accent)}
+.finish > .do h3{color:var(--accent)}
+.do p{margin:0;font-size:13px;line-height:1.5}
+.do p b,.do p strong{color:var(--accent)}
+.do time{font-size:12px;font-style:italic;color:var(--muted)}
 
 /* Ingredient = [qty / name / note] [pass-through filler] */
-.ing{
-  display:grid;grid-template-columns:var(--ingw) 1fr;align-content:center;
-  background:var(--sheet);
-}
-.ing > *{grid-column:1;padding:0 var(--pad);line-height:1.25}
+.ing{display:grid;grid-template-columns:var(--ingw) 1fr;align-content:center;background:var(--paper)}
+.ing > *{grid-column:1;padding:0 var(--pad);line-height:1.35}
 .ing > :first-child{padding-top:9px}
 .ing > :last-child{padding-bottom:9px}
-.ing b{font-weight:700;color:var(--muted);font-size:.9em}
-.ing span{font-weight:700}
-.ing small{font-size:.8em;color:var(--muted)}
+.ing b{color:var(--muted);font-size:12px}
+.ing span{font-size:13px}
+.ing small{font-size:12px;font-style:italic;color:var(--muted)}
 
 /* pass-through filler: dashed arrow with optional label (data-wait) */
 .step::after,.ing::after{
@@ -101,25 +100,23 @@ body > header em{font-style:normal;color:var(--muted);margin-right:4px}
   border-left:1px solid var(--line);margin-left:-1px;
   display:flex;align-items:center;justify-content:center;
   padding:0 0 1.9em;overflow:hidden;
-  font:400 14px/1 var(--font-head);color:var(--muted);text-align:center;
+  font:italic 400 12px/1 var(--font);color:var(--muted);text-align:center;
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='10'%3E%3Cpath d='M0 0L9 5L0 10z' fill='%238fa3cc'/%3E%3C/svg%3E") right 50%/9px 10px no-repeat,
-    linear-gradient(90deg,var(--hold) 50%,transparent 0) 0 50%/9px 1.5px repeat-x;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='8'%3E%3Cpath d='M0 0L7 4L0 8z' fill='%23b9b9b2'/%3E%3C/svg%3E") right 50%/7px 8px no-repeat,
+    linear-gradient(90deg,var(--faint) 50%,transparent 0) 0 50%/8px 1px repeat-x;
 }
 .toolchart > .step::after{display:none}
 .toolchart > .step > .do{flex-grow:1}
 .ing::after{content:"";grid-column:2;grid-row:1 / span 3;padding:0}
 
 /* ───── responsive ───── */
-@media (max-width:1024px){ :root{--ingw:150px;--colmin:122px;--pad:10px;--fs:14px} }
+@media (max-width:1024px){ :root{--ingw:160px;--colmin:130px;--pad:10px} }
 @media (max-width:640px){
-  :root{--ingw:118px;--colmin:156px;--pad:9px}
-  body{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
-  body > header{padding:8px 10px}
-  body > header{gap:2px 16px}
-  body > header h1{flex-basis:100%}
+  :root{--ingw:124px;--colmin:156px;--pad:9px}
+  body{padding:max(24px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 48px max(12px,env(safe-area-inset-left))}
+  body > header{gap:2px 16px;margin-bottom:20px}
 }
-@media (max-height:500px) and (orientation:landscape){ :root{--ingw:150px;--colmin:120px;--pad:8px} body{padding-top:8px} }
+@media (max-height:500px) and (orientation:landscape){ :root{--ingw:150px;--colmin:120px;--pad:8px} body{padding-top:12px} }
 @media print{
   @page{size:landscape;margin:10mm}
   body{background:#fff;padding:0}

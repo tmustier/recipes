@@ -38,12 +38,17 @@ const AGENT_INSTRUCTIONS = "Fork github.com/lucasmeijer/recipes into my own GitH
   "Then explain to me that I can start an agent in a clone of my new repo and ask it to make batch-cooking recipes, " +
   "and that they'll automatically be added to my new website.";
 
-const items = recipes.map(r => `
-    <li data-search="${esc(r.search)}"><a href="${esc(r.href)}">
-      <span class="t">${esc(r.title)}</span>
-      <span class="f">${r.facts.map(esc).join(" · ")}</span>
-      <time>${r.date}</time>
-    </a></li>`).join("");
+const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
+let year = "";
+const items = recipes.map(r => {
+  const [y, m, d] = r.date.split("-");
+  const marker = y !== year ? `\n    <li class="marker">${(year = y)}</li>` : "";
+  return `${marker}
+    <li data-search="${esc(r.search)}">
+      <div class="head"><span class="date">${+d} ${MONTHS[m - 1]}</span> <a href="${esc(r.href)}">${esc(r.title)}</a></div>
+      <div class="desc">${r.facts.map(esc).join(" · ")}</div>
+    </li>`;
+}).join("");
 
 writeFileSync(`${OUT}/index.html`, `<!doctype html>
 <html lang="en">
@@ -51,40 +56,46 @@ writeFileSync(`${OUT}/index.html`, `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-title" content="Recipes">
-<title>Recipes</title>
+<title>Recipes · Thomas Mustier</title>
 <script src="toolchart.js" defer></script>
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Kalam:wght@700&display=swap");
-:root{--paper:#fdfcf3;--sheet:#fffef8;--ink:#1f2a44;--muted:#6a7593;--rule:#3a5a9a;--line:#a9bbdf}
-*{box-sizing:border-box}
-body{margin:0 auto;max-width:760px;font:16px/1.4 Nunito,system-ui,sans-serif;color:var(--ink);
-  background:linear-gradient(rgba(58,90,154,.12) 1px,transparent 1px) 0 0/100% 28px,var(--paper);
-  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left))}
-h1{font:700 2em/1.1 Kalam,cursive;margin:8px 0 14px}
-input{width:100%;font:inherit;padding:12px 14px;border:1.5px solid var(--rule);background:var(--sheet);color:inherit;border-radius:0;-webkit-appearance:none}
-input:focus{outline:2px solid var(--line)}
-ul{list-style:none;margin:14px 0 0;padding:0;border:1.5px solid var(--rule);background:var(--sheet)}
-li + li{border-top:1px solid var(--line)}
-a{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:14px;color:inherit;text-decoration:none}
-a:hover,a:active{background:color-mix(in srgb,var(--line) 18%,var(--sheet))}
-.t{font:700 1.3em/1.15 Kalam,cursive}
-.f{grid-column:1;color:var(--muted);font-size:.9em}
-time{grid-column:2;grid-row:1;color:var(--muted);font-size:.8em;align-self:center}
-.empty{color:var(--muted);padding:14px;display:none}
-.agent{display:block;margin:20px auto 0;padding:4px 6px;font:inherit;font-size:.85em;color:var(--muted);background:none;border:0;cursor:pointer;
-  text-decoration:underline dotted;text-underline-offset:3px;transition:color .2s}
-.agent:hover{color:var(--ink)}
-.agent .done{display:none;color:#2f8f5b;text-decoration:none}
+@font-face{font-family:"Fragment Mono";src:url("fragment-mono-regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Fragment Mono";src:url("fragment-mono-italic.woff2") format("woff2");font-weight:400;font-style:italic;font-display:swap}
+:root{--ink:#1d1d1b;--muted:#8b8b85;--faint:#b9b9b2;--line:#e6e6e1;--paper:#fbfbf9;--accent:#96341f}
+*{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--paper)}
+body{font-family:"Fragment Mono",ui-monospace,monospace;font-size:14px;line-height:1.65;color:var(--ink);max-width:620px;margin:0 auto;
+  padding:max(72px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) 96px max(24px,env(safe-area-inset-left));
+  text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--faint);text-underline-offset:3px}
+a:hover{color:var(--accent);text-decoration-color:var(--accent)}
+header h1{font-size:14px;font-weight:400;letter-spacing:.02em}
+header h1 a{text-decoration:none}
+main{margin-top:64px}
+main h2{font-size:14px;font-weight:400;color:var(--muted);margin-bottom:12px}
+input{width:100%;font:inherit;color:inherit;padding:6px 0;border:0;border-bottom:1px solid var(--line);background:transparent;border-radius:0;-webkit-appearance:none}
+input::placeholder{color:var(--faint)}
+input:focus{outline:0;border-bottom-color:var(--accent)}
+ul{list-style:none}
+li{margin-top:36px}
+.marker{color:var(--faint);font-size:13px;margin-top:48px}
+.head{display:flex;align-items:baseline;gap:12px}
+.date{color:var(--muted);font-size:13px;white-space:nowrap}
+.desc{margin-top:4px;color:var(--muted);font-size:13px}
+.empty{color:var(--muted);margin-top:36px;display:none}
+footer{margin-top:96px;padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+footer p + p{margin-top:4px}
+footer a{color:var(--muted)}
+.agent{font:inherit;color:var(--muted);background:none;border:0;cursor:pointer;text-decoration:underline;text-decoration-color:var(--faint);text-underline-offset:3px}
+.agent:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.agent .done{display:none;text-decoration:none}
 .agent.copied{text-decoration:none}
 .agent.copied .idle{display:none}
-.agent.copied .done{display:inline;animation:fade .3s ease-out}
-@keyframes fade{from{opacity:0;transform:translateY(3px)}}
-@media (prefers-reduced-motion:reduce){.agent .done{animation:none}}
+.agent.copied .done{display:inline}
 html{overscroll-behavior-y:none}
-.ptr{position:fixed;top:0;left:50%;z-index:9;width:36px;height:36px;margin-left:-18px;display:grid;place-items:center;border-radius:50%;
-  background:var(--sheet);border:1.5px solid var(--rule);color:var(--rule);box-shadow:0 2px 8px rgba(31,42,68,.15);
-  transform:translateY(-48px);opacity:0;pointer-events:none}
-.ptr svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ptr{position:fixed;top:0;left:50%;z-index:9;width:32px;height:32px;margin-left:-16px;display:grid;place-items:center;border-radius:50%;
+  background:var(--paper);border:1px solid var(--line);color:var(--muted);transform:translateY(-48px);opacity:0;pointer-events:none}
+.ptr svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .ptr.back{transition:transform .25s,opacity .25s}
 .ptr.loading svg{animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -92,18 +103,25 @@ html{overscroll-behavior-y:none}
 </head>
 <body>
 <div class="ptr" id="ptr" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></div>
-<h1>Recipes</h1>
+<header><h1><a href="https://www.mustier.ai">Thomas Mustier</a></h1></header>
+<main>
+<h2>Recipes</h2>
 <input id="q" type="search" placeholder="Search by name or ingredient…" autocomplete="off">
 <ul id="list">${items}
 </ul>
 <p class="empty" id="empty">No recipes match.</p>
-<button class="agent" id="agent" type="button"><span class="idle">Agent instructions for getting your own version of this recipe website</span><span class="done" aria-live="polite">✓ Copied to clipboard</span></button>
+</main>
+<footer>
+<p>Each recipe is one chart: ingredients on the left, steps to the right. Format and tooling from <a href="https://github.com/lucasmeijer/recipes">Lucas Meijer</a>.</p>
+<p><button class="agent" id="agent" type="button"><span class="idle">Agent instructions for getting your own version of this recipe website</span><span class="done" aria-live="polite">Copied to clipboard</span></button></p>
+</footer>
 <script>
-const q = document.getElementById("q"), lis = [...document.querySelectorAll("#list li")];
+const q = document.getElementById("q"), lis = [...document.querySelectorAll("#list li[data-search]")];
 q.oninput = () => {
   const words = q.value.toLowerCase().split(/\\s+/).filter(Boolean);
   let shown = 0;
   for (const li of lis) { const ok = words.every(w => li.dataset.search.includes(w)); li.hidden = !ok; shown += ok; }
+  for (const m of document.querySelectorAll(".marker")) m.hidden = words.length > 0;
   document.getElementById("empty").style.display = shown ? "none" : "block";
 };
 // pull down from the top of the page to reload (also in home-screen apps, which have no browser reload)
@@ -125,7 +143,7 @@ q.oninput = () => {
     const y = Math.min(110, pull * 0.5);                                // resistance
     show(y, false);
     icon.style.transform = \`rotate(\${pull * 1.5}deg)\`;
-    ptr.style.color = y >= THRESHOLD ? "#2f8f5b" : "";
+    ptr.style.color = y >= THRESHOLD ? "#96341f" : "";
   }, { passive: true });
   addEventListener("touchend", () => {
     if (startY === null) return;

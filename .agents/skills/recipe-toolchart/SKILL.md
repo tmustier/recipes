@@ -5,11 +5,11 @@ description: Turns a recipe into an HTML "toolchart" page — a Cooking for Engi
 
 # Recipe Toolchart
 
-The output is one HTML page in `recipes/` that works on phones, tablets and desktops. All styling and layout lives in the shared [`recipes/toolchart.css`](../../../recipes/toolchart.css), and [`recipes/toolchart.js`](../../../recipes/toolchart.js) keeps the screen on while a recipe is open. Your job is only the recipe content. [`recipes/carbonara.html`](../../../recipes/carbonara.html) is a complete worked example.
+The output is one HTML page in `recipes/` that works on phones, tablets and desktops. All styling and layout lives in the shared [`recipes/toolchart.css`](../../../recipes/toolchart.css), and [`recipes/toolchart.js`](../../../recipes/toolchart.js) keeps the screen on while a recipe is open. Your job is only the recipe content. [`recipes/beef-wellington.html`](../../../recipes/beef-wellington.html) is a complete worked example.
 
 ## Workflow
 
-1. Copy `recipes/carbonara.html` to `recipes/<recipe-name>.html`, using a short lowercase-hyphenated name like `chili-sin-carne.html`.
+1. Copy `recipes/beef-wellington.html` to `recipes/<recipe-name>.html`, using a short lowercase-hyphenated name like `chili-sin-carne.html`.
 2. Set `<title>`, and keep the rest of the `<head>` as it is: it links `toolchart.css` and `toolchart.js`. Don't edit those two files, and don't add classes, inline styles or scripts.
 3. Replace the `<header>` and the `.toolchart` with your recipe's.
 4. Render it and look at it (see Check).
@@ -82,4 +82,4 @@ If you can render HTML (e.g. Playwright with a headless Chromium), take screensh
 
 Mis-nesting doesn't produce an error, it just draws the wrong chart, so compare the picture against your nested expression. On narrow phones the chart scrolls sideways; that's expected.
 
-Fonts (Nunito and Kalam) load from Google Fonts. Offline, the page falls back to system fonts and still works.
+The font (Fragment Mono, the same as mustier.ai) is self-hosted in `recipes/`. It has no bold, so `<b>` renders as brick-coloured regular text.
