@@ -2,7 +2,7 @@
 
 My recipes as one-page "toolcharts": each recipe is a single rectangular flowchart, with ingredients down the left and steps to the right, in the style of Cooking for Engineers. Each one is an HTML page that works on a phone, tablet or desktop, and keeps the screen on while it's open.
 
-Live at **https://recipes.lucasmeijer.com**.
+Live at **https://recipes.mustier.ai**. Forked from [lucasmeijer/recipes](https://github.com/lucasmeijer/recipes).
 
 ## Make your own
 
