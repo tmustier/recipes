@@ -49,7 +49,7 @@ function shoppingList(menu, dishes) {
 export function menuData(id, menu, dishes) {
   const page = r => `${id}-${r}`;
   return {
-    id, title: menu.title, when: menu.when, eaters: menu.eaters,
+    id, title: menu.title, when: menu.when, eaters: menu.eaters, near: menu.near ?? null,
     dishes: dishes.map(d => ({ href: page(d.recipe), title: d.scaled.title, label: d.label ?? null })),
     shops: shoppingList(menu, dishes),
     stations: menu.stations.map(s => ({ ...s, jobs: s.jobs.map(j => ({ ...j, href: j.recipe ? page(j.recipe) : null, title: j.recipe ? dishes.find(d => d.recipe === j.recipe).scaled.title : null })) })),
@@ -77,4 +77,19 @@ export function renderMenu(menu, data) {
 </body>
 </html>
 `;
+}
+
+// A recipe as numbered steps in cooking order (each step after the steps it needs), for reading out loud
+// or by a chat assistant rather than as a chart.
+export function recipeSteps(r) {
+  const steps = [];
+  const plain = t => t.replace(/\{([^}]+)\}/g, "$1").replace(/\*\*(.+?)\*\*/g, "$1");
+  const visit = n => {
+    const after = n.inputs.filter(c => c.inputs).map(visit);
+    const adds = n.inputs.filter(c => !c.inputs).map(i => [formatQuantity(i.qty) + (i.alt ? ` (${formatQuantity(i.alt)})` : ""), i.name, i.note].filter(Boolean).join(" "));
+    steps.push({ step: steps.length + 1, action: n.verb, text: plain(n.text), time: n.time, ingredients: adds, after_steps: after, then: n.wait });
+    return steps.length;
+  };
+  visit(r.root);
+  return { title: r.title, serves: r.serves, facts: Object.fromEntries(r.facts), equipment: r.equipment, ingredients: ingredients(r).map(i => `${formatQuantity(i.qty)} ${i.name}`), steps };
 }

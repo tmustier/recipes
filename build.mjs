@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { parseRecipe, renderPage, ingredients } from "./recipe.mjs";
-import { scaledDishes, menuData, renderMenu } from "./menu.mjs";
+import { scaledDishes, menuData, renderMenu, recipeSteps } from "./menu.mjs";
 
 const SRC = "recipes", OUT = "dist";
 rmSync(OUT, { recursive: true, force: true });
@@ -41,9 +41,13 @@ for (const f of menus) {
   const id = f.replace(/\.json$/, "");
   const menu = JSON.parse(readFileSync(`menus/${f}`, "utf8"));
   const dishes = scaledDishes(menu, parsed);
-  for (const d of dishes) writeFileSync(`${OUT}/${id}-${d.recipe}.html`, renderPage(d.scaled, { scaledFrom: d.recipe }));
-  writeFileSync(`${OUT}/${id}.html`, renderMenu(menu, menuData(id, menu, dishes)));
-  writeFileSync(`${OUT}/${id}.menu.json`, "{}\n");
+  for (const d of dishes) {
+    writeFileSync(`${OUT}/${id}-${d.recipe}.html`, renderPage(d.scaled, { scaledFrom: d.recipe }));
+    writeFileSync(`${OUT}/${id}-${d.recipe}.steps.json`, JSON.stringify(recipeSteps(d.scaled), null, 2) + "\n");
+  }
+  const data = menuData(id, menu, dishes);
+  writeFileSync(`${OUT}/${id}.html`, renderMenu(menu, data));
+  writeFileSync(`${OUT}/${id}.menu.json`, JSON.stringify(data, null, 2) + "\n");
 }
 
 // copied to the clipboard by the button on the home page

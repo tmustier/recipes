@@ -1,0 +1,87 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Shared dinner menu",
+    "version": "1.0.0",
+    "description": "Read and update a shared dinner plan: shops and shopping list, who is going where, cooking stations and recipes. Changes show up live for everyone on the menu page."
+  },
+  "servers": [{ "url": "https://recipes.mustier.ai" }],
+  "paths": {
+    "/api/menus/{menu}": {
+      "get": {
+        "operationId": "getMenu",
+        "summary": "Get the whole plan with live status",
+        "description": "Dishes, every shop (address, hours, map link, who is going, each item with quantity, French name and status), extras, and cooking stations with who has joined. Call this first and again after changes.",
+        "parameters": [{ "$ref": "#/components/parameters/menu" }],
+        "responses": { "200": { "description": "The plan", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/menus/{menu}/recipes/{recipe}": {
+      "get": {
+        "operationId": "getRecipe",
+        "summary": "Get one dish as numbered steps, already scaled for the dinner",
+        "parameters": [
+          { "$ref": "#/components/parameters/menu" },
+          { "name": "recipe", "in": "path", "required": true, "description": "The dish's recipe key from getMenu, e.g. beef-wellington", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Steps in cooking order", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/menus/{menu}/items/{item}": {
+      "post": {
+        "operationId": "setItem",
+        "summary": "Tick an item off, or untick it",
+        "description": "sorted: bought, or (for cupboard and kitchen kit items) we have it. need_to_buy: a cupboard or kit item is missing, so it joins the G20 list. not_sorted: undo. Returns the updated plan.",
+        "parameters": [
+          { "$ref": "#/components/parameters/menu" },
+          { "name": "item", "in": "path", "required": true, "description": "Item id from getMenu", "schema": { "type": "string" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object", "required": ["status", "by"],
+          "properties": {
+            "status": { "type": "string", "enum": ["sorted", "need_to_buy", "not_sorted"] },
+            "by": { "type": "string", "description": "First name of the person making the change" }
+          }
+        } } } },
+        "responses": { "200": { "description": "The updated plan", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/menus/{menu}/signups": {
+      "post": {
+        "operationId": "signUp",
+        "summary": "Join or leave a shop run or a cooking station",
+        "parameters": [{ "$ref": "#/components/parameters/menu" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object", "required": ["target", "by"],
+          "properties": {
+            "target": { "type": "string", "description": "shop:<shop key> or station:<station key>, keys from getMenu, e.g. shop:fromagerie or station:beef" },
+            "join": { "type": "boolean", "description": "true to join (default), false to leave" },
+            "by": { "type": "string", "description": "First name of the person" }
+          }
+        } } } },
+        "responses": { "200": { "description": "The updated plan", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/menus/{menu}/extras": {
+      "post": {
+        "operationId": "addExtra",
+        "summary": "Add something else we need to the list",
+        "parameters": [{ "$ref": "#/components/parameters/menu" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object", "required": ["text", "by"],
+          "properties": {
+            "text": { "type": "string", "description": "What to buy, e.g. Champagne x2" },
+            "by": { "type": "string", "description": "First name of the person" }
+          }
+        } } } },
+        "responses": { "200": { "description": "The updated plan", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "menu": { "name": "menu", "in": "path", "required": true, "description": "Menu id. Use riri.", "schema": { "type": "string", "default": "riri" } }
+    },
+    "schemas": {}
+  }
+}

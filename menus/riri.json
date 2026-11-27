@@ -2,6 +2,7 @@
   "title": "Riri's 30th",
   "when": "Saturday 28 November, 7:30pm",
   "eaters": 10,
+  "near": "The house is in Auteuil, Paris 16e, near Michel-Ange–Auteuil and Église d'Auteuil metro stations. All the shops are walkable from there.",
 
   "dishes": [
     { "recipe": "beef-wellington", "serves": 10 },
@@ -12,13 +13,12 @@
   ],
 
   "shops": [
-    { "key": "market", "title": "Marché d'Auteuil", "where": "Butcher and charcuterie stalls, place Jean Lorrain, until 14:30", "map": "https://www.google.com/maps/search/?api=1&query=Marché+d'Auteuil+Place+Jean+Lorrain+Paris" },
-    { "key": "fruitier", "title": "Le Fruitier d'Auteuil", "where": "Vegetables", "map": "https://www.google.com/maps/search/?api=1&query=Le+Fruitier+d'Auteuil+Paris" },
-    { "key": "fromagerie", "title": "Fromagerie Laurent Dubois", "where": "Cheese and dairy", "map": "https://www.google.com/maps/search/?api=1&query=Fromagerie+Laurent+Dubois+Auteuil+Paris" },
-    { "key": "kaviari", "title": "Kaviari Delikatessen", "where": "Foie gras", "map": "https://www.google.com/maps/search/?api=1&query=Kaviari+Delikatessen+Auteuil+Paris" },
-    { "key": "bakery", "title": "Boulangerie Basil", "where": "Bread", "map": "https://www.google.com/maps/search/?api=1&query=Boulangerie+Basil+Paris+16" },
-    { "key": "wine", "title": "Le Garde Vins", "where": "Wine", "map": "https://www.google.com/maps/search/?api=1&query=Le+Garde+Vins+Paris+16" },
-    { "key": "supermarket", "title": "G20 Auteuil", "where": "Everything else, open until 22:00", "map": "https://www.google.com/maps/search/?api=1&query=G20+Auteuil+Market+Paris" },
+    { "key": "market", "address": "Place Jean Lorrain, 75016 Paris", "hours": "Saturday 7:00–14:30", "title": "Marché d'Auteuil", "where": "Butcher and charcuterie stalls, place Jean Lorrain, until 14:30", "map": "https://www.google.com/maps/search/?api=1&query=Marché+d'Auteuil+Place+Jean+Lorrain+Paris" },
+    { "key": "fruitier", "address": "5 Rue Bastien Lepage, 75016 Paris", "title": "Le Fruitier d'Auteuil", "where": "Vegetables", "map": "https://www.google.com/maps/search/?api=1&query=Le+Fruitier+d'Auteuil+Paris" },
+    { "key": "fromagerie", "address": "58 Rue d'Auteuil, 75016 Paris", "title": "Fromagerie Laurent Dubois", "where": "Cheese and dairy", "map": "https://www.google.com/maps/search/?api=1&query=Fromagerie+Laurent+Dubois+Auteuil+Paris" },
+    { "key": "kaviari", "address": "2 Rue Donizetti, 75016 Paris", "title": "Kaviari Delikatessen", "where": "Foie gras", "map": "https://www.google.com/maps/search/?api=1&query=Kaviari+Delikatessen+Auteuil+Paris" },
+    { "key": "bakery", "address": "12 Rue François Millet, 75016 Paris", "title": "Boulangerie Basil", "where": "Bread", "map": "https://www.google.com/maps/search/?api=1&query=Boulangerie+Basil+Paris+16" },
+    { "key": "supermarket", "address": "77 Rue d'Auteuil, 75016 Paris", "hours": "Until 22:00", "title": "G20 Auteuil", "where": "Everything else, open until 22:00", "map": "https://www.google.com/maps/search/?api=1&query=G20+Auteuil+Market+Paris" },
     { "key": "pantry", "title": "Cupboard", "where": "Probably at home", "check": true },
     { "key": "kit", "title": "Kitchen kit", "where": "Probably at home", "check": true }
   ],
@@ -48,8 +48,8 @@
     "Prepared horseradish": { "fr": "Raifort", "shop": "supermarket", "note": "If you can't find it, use more hot mustard" },
     "Beef stock": { "fr": "Bouillon de bœuf / fond de veau", "shop": "supermarket" },
     "Chicken stock": { "fr": "Bouillon de volaille", "shop": "supermarket", "note": "Optional" },
-    "Red wine": { "fr": "Vin rouge", "shop": "wine" },
-    "Cognac": { "fr": "Cognac", "shop": "wine", "note": "Check the house first" },
+    "Red wine": { "fr": "Vin rouge", "shop": "supermarket" },
+    "Cognac": { "fr": "Cognac", "shop": "supermarket", "note": "Check the house first" },
     "Ice": { "fr": "Glaçons", "shop": "supermarket" },
 
     "Kosher salt & pepper": { "as": "Salt & pepper" },
