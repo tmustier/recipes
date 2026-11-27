@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Recipes: system diagram</title>
+<style>
+@font-face{font-family:"Fragment Mono";src:url("../recipes/fragment-mono-regular.woff2") format("woff2")}
+:root{--ink:#1d1d1b;--muted:#8b8b85;--line:#e6e6e1;--paper:#fbfbf9;--accent:#96341f}
+*{margin:0;box-sizing:border-box}
+body{font-family:"Fragment Mono",monospace;font-size:15px;color:var(--ink);background:var(--paper);padding:48px 56px;width:1400px}
+h1{font-size:20px;font-weight:400}
+.sub{color:var(--muted);margin-top:6px}
+.card{border:1px solid var(--line);background:#fff;padding:24px;margin-top:28px}
+.mermaid{display:flex;justify-content:center}
+.stack{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;margin-top:28px}
+.stack h3{font-size:15px;font-weight:400;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px}
+.stack p{font-size:13px;line-height:1.6;margin-top:10px}
+</style>
+</head>
+<body>
+<h1>recipes.mustier.ai: how it fits together</h1>
+<p class="sub">Plain JavaScript, no frameworks or packages. Built with Node, hosted on Cloudflare.</p>
+
+<div class="card">
+<pre class="mermaid">
+flowchart TB
+  subgraph Publish["Publishing, from this Mac"]
+    direction LR
+    R["GitHub: tmustier/recipes<br/>recipe text files, menus/riri.json,<br/>page code, fonts"]
+    B["node deploy.mjs<br/>build pages, check live list,<br/>upload with Wrangler"]
+    R --> B
+  end
+
+  subgraph CF["Cloudflare: recipes.mustier.ai"]
+    direction LR
+    A["Static files<br/>recipe pages, /riri"]
+    K["Worker<br/>worker.js: the API"]
+    O[("Durable Object<br/>the shared list for each menu")]
+    K -- "one change at a time" --> O
+  end
+
+  subgraph Users["People"]
+    direction LR
+    G["ChatGPT desktop app<br/>or other browser agent"]
+    P["Phones and laptops<br/>a browser, nothing to install"]
+    G -- "WebMCP tools in the page" --> P
+  end
+
+  B -- "upload" --> A
+  B -- "upload" --> K
+  P -- "load pages" --> A
+  P -- "taps" --> K
+  O -. "live updates" .-> P
+</pre>
+</div>
+
+<div class="stack">
+  <div><h3>Recipes</h3><p>Each recipe is a small text file in our own format. build.mjs turns it into a flowchart page plus JSON. A menu scales its recipes to the number of people and adds up one shopping list.</p></div>
+  <div><h3>Hosting</h3><p>One Cloudflare Worker serves the built files and the API at recipes.mustier.ai. The shared list lives in a Durable Object, which saves to its own built-in storage.</p></div>
+  <div><h3>The page</h3><p>Plain JavaScript in the browser. The name and any unsaved taps are kept on the phone. The same rules for a tap (board.js) run on the phone and the server.</p></div>
+  <div><h3>Deploying</h3><p>node deploy.mjs on this Mac: build, check the live list, upload with Wrangler. GitHub Actions also builds on every push, but can't deploy until a Cloudflare token is added.</p></div>
+</div>
+
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+await document.fonts.load('14px "Fragment Mono"');
+mermaid.initialize({ startOnLoad: false, theme: "base", flowchart: { curve: "basis", padding: 14 }, themeVariables: {
+  fontFamily: '"Fragment Mono", monospace', fontSize: "17px",
+  primaryColor: "#fbfbf9", primaryBorderColor: "#b9b9b2", primaryTextColor: "#1d1d1b",
+  clusterBkg: "#ffffff", clusterBorder: "#e6e6e1", titleColor: "#8b8b85",
+  lineColor: "#96341f", textColor: "#1d1d1b", edgeLabelBackground: "#ffffff" } });
+await mermaid.run();
+document.body.dataset.ready = "1";
+</script>
+</body>
+</html>
