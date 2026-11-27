@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shared menu: statechart</title>
+<style>
+@font-face{font-family:"Fragment Mono";src:url("../recipes/fragment-mono-regular.woff2") format("woff2")}
+:root{--ink:#1d1d1b;--muted:#8b8b85;--line:#e6e6e1;--paper:#fbfbf9;--accent:#96341f}
+*{margin:0;box-sizing:border-box}
+body{font-family:"Fragment Mono",monospace;font-size:15px;color:var(--ink);background:var(--paper);padding:48px 56px;width:1800px}
+h1{font-size:20px;font-weight:400}
+.sub{color:var(--muted);margin-top:6px}
+h2{font-size:15px;font-weight:400;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px;margin:40px 0 0}
+h2 span{color:var(--accent);margin-left:8px;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;margin-top:20px;align-items:start}
+.card{border:1px solid var(--line);background:#fff;padding:18px 18px 10px}
+.card h3{font-size:15px;font-weight:400}
+.card p{color:var(--muted);font-size:12px;margin:4px 0 8px;line-height:1.5}
+.card.wide{grid-column:span 2}
+.mermaid{display:flex;justify-content:center}
+</style>
+</head>
+<body>
+<h1>Riri's 30th: how the shared menu works</h1>
+<p class="sub">recipes.mustier.ai/riri · state lives in recipes/board.js, worker.js and recipes/menu.js</p>
+
+<h2>Shared by everyone <span>one board per menu, held by the server</span></h2>
+<div class="grid">
+  <div class="card"><h3>Shop item</h3><p>Butter, eggs, baguettes…</p>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> ToBuy
+  ToBuy: To buy
+  ToBuy --> Sorted: tick
+  Sorted --> ToBuy: untick
+</pre></div>
+  <div class="card"><h3>Cupboard or kitchen kit item</h3><p>Probably at home. Missing ones join the G20 list.</p>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> NotChecked
+  NotChecked: Not checked
+  Have: We have it
+  Missing: Missing, on G20 list
+  NotChecked --> Have: tick
+  Have --> NotChecked: untick
+  NotChecked --> Missing: Need to buy
+  Missing --> Bought: tick
+  Bought --> Missing: untick
+</pre></div>
+  <div class="card"><h3>Sign-up</h3><p>One per person, per shop or cooking station.</p>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Out
+  Out: Not on it
+  In: On it
+  Out --> In: I'll go / Join
+  In --> Out: Leave
+</pre></div>
+  <div class="card"><h3>Server</h3><p>Handles one change at a time, so none get lost.</p>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Idle
+  Idle: Waiting
+  Check: Check against menu
+  Apply: Apply, version + 1, save
+  Push: Send board to every open phone
+  Idle --> Check: change
+  Check --> Idle: not valid, say why
+  Check --> Apply: valid
+  Apply --> Push
+  Push --> Idle
+</pre></div>
+</div>
+
+<h2>On each phone <span>these run side by side</span></h2>
+<div class="grid">
+  <div class="card"><h3>Name</h3><p>Asked once, remembered on the phone.</p>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Anonymous
+  Ask: Who's this? (tap held)
+  Anonymous --> Ask: first tap
+  Ask --> Named: pick or type name, tap goes through
+  Ask --> Anonymous: dismiss, tap dropped
+  Named --> Ask: change
+</pre></div>
+  <div class="card"><h3>Unsaved taps</h3><p>Kept on the phone until the server has them. Sent oldest first.</p>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Empty
+  Empty: Nothing waiting
+  Sending: Sending
+  Retry: Not saved yet
+  Empty --> Sending: tap
+  Sending --> Empty: all sent
+  Sending --> Retry: no signal
+  Retry --> Sending: after 1-15 s, or signal back
+</pre></div>
+  <div class="card"><h3>Live connection</h3><p>Hears other people's changes straight away. Also checks the server every 30 s when live, every 4 s when not.</p>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Connecting
+  Down: Disconnected
+  Connecting --> Live
+  Live --> Down: dropped
+  Down --> Connecting: after 1-15 s
+  Live --> Paused: in background
+  Paused --> Connecting: back in front
+</pre></div>
+  <div class="card"><h3>What the phone shows</h3><p>Not a state machine: worked out fresh every time.</p>
+    <p style="color:var(--ink);font-size:14px;margin-top:16px">Newest board from the server, with this phone's unsaved taps applied on top.</p>
+    <p style="color:var(--ink);font-size:14px">Every board has a version number. A board older than the one the phone already has is ignored.</p>
+  </div>
+</div>
+
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+await document.fonts.load('14px "Fragment Mono"');
+mermaid.initialize({ startOnLoad: false, theme: "base", themeVariables: {
+  fontFamily: '"Fragment Mono", monospace', fontSize: "14px",
+  primaryColor: "#fbfbf9", primaryBorderColor: "#b9b9b2", primaryTextColor: "#1d1d1b",
+  lineColor: "#96341f", textColor: "#1d1d1b", edgeLabelBackground: "#ffffff", background: "#ffffff" } });
+await mermaid.run();
+document.body.dataset.ready = "1";
+</script>
+</body>
+</html>
