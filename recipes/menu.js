@@ -1,16 +1,27 @@
 // Shared menu page: who's cooking what, and the shopping list everyone ticks off together.
-// Static content comes from the JSON in the page; the live state lives at /api/board/<id> (worker.js).
+// Static content comes from the JSON in the page; the live board lives at /api/board/<id> (worker.js).
+// What each tap does to an item is defined once, in board.js, and shared with the server.
 //
-// Item states: none (still to buy), "bought" (sorted: bought or found at home), "have" (a cupboard or kit
-// item we have), "need" (a cupboard or kit item that's missing; it then shows on the shopping list).
-(() => {
+// Keeping phones in step:
+//   - Every tap goes into an outbox kept on the phone, shows straight away and is sent in order. If it can't
+//     be sent (no signal), it stays in the outbox, is retried, and survives a reload. Resending is safe.
+//   - The page shows the server's latest board with the outbox's changes on top.
+//   - The server pushes the board over a WebSocket on every change. A check every few seconds is the backup.
+//   - Each board has a version number; an older one than we already have is ignored.
+import { applyChange, newExtraId } from "./board.js";
+
+{
   const menu = JSON.parse(document.getElementById("menu").textContent);
   const app = document.getElementById("app");
   const API = `/api/board/${menu.id}`;
-  let state = { items: {}, claims: {}, added: [], v: 0 };
+  const OUTBOX = `menu-outbox-${menu.id}`;
+  let server = { items: {}, claims: {}, added: [], v: 0 }; // the newest board the server has sent us
+  let outbox = JSON.parse(localStorage.getItem(OUTBOX) || "[]"); // our changes it hasn't confirmed yet
+  let state = server; // what's shown: server plus outbox
   let me = localStorage.getItem("menu-name") || "";
   let view = localStorage.getItem("menu-view") || "todo";
-  let pending = 0;
+  let offline = false; // the last attempt to reach the server failed
+  let problem = ""; // a change the server turned down, shown briefly
   let recent = new Map(); // id -> time ticked here; ticked items linger in "To buy" briefly so a slip is easy to undo
   let waiting = null; // the tap made before we knew who you are; replayed once you pick a name
 
@@ -30,6 +41,7 @@
       <div class="bar">
         <h2>Shopping <span id="count"></span></h2>
         <nav class="seg" id="view"><button data-view="todo">To buy</button><button data-view="all">All</button></nav>
+        <p class="sync" id="sync" hidden></p>
       </div>
       <div id="shops"></div>
       <form id="add" class="add"><input name="text" placeholder="Add something we need" autocomplete="off" enterkeyhint="done"><button>Add</button></form>
@@ -84,6 +96,17 @@
     </li>`;
   }
 
+  const unsaved = id => offline && outbox.some(c => c.id === id);
+
+  function renderSync() {
+    const el = document.getElementById("sync");
+    const n = outbox.length;
+    el.textContent = problem ? `Couldn't save: ${problem}`
+      : offline && n ? `No connection. ${n === 1 ? "1 change" : `${n} changes`} will save when you're back online.`
+      : offline ? "No connection. The list may be out of date." : "";
+    el.hidden = !el.textContent;
+  }
+
   function renderShops() {
     const check = menu.shops.filter(s => s.check), buy = menu.shops.filter(s => !s.check);
     const added = state.added.map(a => ({ id: a.id, name: a.text, note: `Added by ${a.by}`, added: true }));
@@ -105,7 +128,7 @@
         <div class="row"><div><h3>${s.map ? `<a href="${esc(s.map)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</h3>${s.where ? `<div class="where">${esc(s.where)}</div>` : ""}</div>${s.key === "added" ? "" : claim(`shop:${s.key}`, "I'll go")}</div>
         ${shown.length ? `<ul>${shown.map(i => row(i, {
           done: status(i.id) === "bought",
-          who: status(i.id) === "bought" ? by(i.id) : status(i.id) === "need" ? `Missing, said ${by(i.id)}` : i.added ? i.note : "",
+          who: unsaved(i.id) ? "Not saved yet" : status(i.id) === "bought" ? by(i.id) : status(i.id) === "need" ? `Missing, said ${by(i.id)}` : i.added ? i.note : "",
           side: i.added && status(i.id) !== "bought" ? "remove" : "", sideLabel: "Remove",
         })).join("")}</ul>` : `<p class="empty">All sorted</p>`}
       </div>`;
@@ -118,7 +141,7 @@
       return `<div class="shop">
         <div class="row"><div><h3>${esc(s.title)}</h3><div class="where">${esc(s.where)}. Tick what we have.</div></div>${claim(`shop:${s.key}`, "I'll check")}</div>
         ${shown.length ? `<ul>${shown.map(i => row(i, {
-          done: status(i.id) === "have", who: status(i.id) === "have" ? by(i.id) : "",
+          done: status(i.id) === "have", who: unsaved(i.id) ? "Not saved yet" : status(i.id) === "have" ? by(i.id) : "",
           side: status(i.id) === "have" ? "" : "need", sideLabel: "Need to buy",
         })).join("")}</ul>` : `<p class="empty">All checked</p>`}
         ${moved ? `<p class="empty">${moved} moved to the supermarket list</p>` : ""}
@@ -128,37 +151,84 @@
     document.getElementById("shops").innerHTML = buyHtml + checkHtml;
   }
 
-  function render() { renderStations(); renderShops(); }
+  function render() { renderStations(); renderShops(); renderSync(); }
+
+  function refresh() {
+    state = outbox.reduce(applyChange, structuredClone(server));
+    render();
+  }
+
+  // Take a board from the server unless we already have a newer one.
+  function adopt(board) {
+    if (board.v > server.v) server = board;
+    refresh();
+  }
+
+  function setOffline(value) {
+    if (offline === value) return;
+    offline = value;
+    render();
+  }
 
   async function load() {
-    if (pending) return;
     try {
       const res = await fetch(API, { cache: "no-store" });
-      if (res.ok && !pending) { state = await res.json(); render(); }
-    } catch {}
+      if (!res.ok) throw new Error();
+      adopt(await res.json());
+      setOffline(false);
+      flush();
+    } catch { setOffline(true); }
   }
 
-  // Show the change straight away, then save it; the server's copy wins when it answers.
-  async function send(change) {
+  // A tap: show it now, keep it in the outbox until the server has it.
+  function send(change) {
     if (!me) { askName(change); return; }
-    apply(change);
-    render();
-    pending++;
-    try {
-      const res = await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...change, by: me }) });
-      if (res.ok) state = await res.json();
-    } catch {} finally { pending--; render(); }
+    outbox.push({ ...change, by: me, at: Date.now() });
+    localStorage.setItem(OUTBOX, JSON.stringify(outbox));
+    refresh();
+    flush();
   }
 
-  function apply(c) {
-    if (c.kind === "item") c.status ? (state.items[c.id] = { status: c.status, by: me }) : delete state.items[c.id];
-    if (c.kind === "claim") {
-      const list = new Set(state.claims[c.key] ?? []);
-      c.on ? list.add(me) : list.delete(me);
-      state.claims[c.key] = [...list];
+  // Send the outbox in order, one change at a time. Stops at the first failure and tries again later.
+  let flushing = false, retry = null, wait = 1000;
+  async function flush() {
+    if (flushing || !outbox.length) return;
+    flushing = true;
+    clearTimeout(retry);
+    while (outbox.length) {
+      let res = null;
+      try { res = await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(outbox[0]) }); } catch {}
+      if (!res || res.status >= 500 || res.status === 429) {
+        setOffline(true);
+        retry = setTimeout(flush, wait);
+        wait = Math.min(wait * 2, 15000);
+        break;
+      }
+      outbox.shift(); // saved, or turned down for good: either way, don't send it again
+      localStorage.setItem(OUTBOX, JSON.stringify(outbox));
+      wait = 1000;
+      setOffline(false);
+      const body = await res.json().catch(() => null);
+      if (!res.ok) { problem = body?.error ?? "something went wrong"; setTimeout(() => { problem = ""; renderSync(); }, 6000); }
+      if (res.ok && body) adopt(body); else refresh();
     }
-    if (c.kind === "remove") state.added = state.added.filter(a => a.id !== c.id);
+    flushing = false;
   }
+
+  // Live updates. The server sends the whole board when we connect and after every change.
+  let socket = null, socketWait = 1000;
+  function connect() {
+    if (document.hidden || socket) return;
+    socket = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}${API}`);
+    socket.onopen = () => { socketWait = 1000; setOffline(false); flush(); };
+    socket.onmessage = e => { if (e.data !== "pong") adopt(JSON.parse(e.data)); };
+    socket.onclose = () => {
+      socket = null;
+      if (!document.hidden) setTimeout(connect, socketWait);
+      socketWait = Math.min(socketWait * 2, 15000);
+    };
+  }
+  const live = () => socket?.readyState === WebSocket.OPEN;
 
   // names already on the board, so someone on a second phone (or who cleared it) can just tap theirs
   function knownNames() {
@@ -201,14 +271,11 @@
     if (b.dataset.claim) { send({ kind: "claim", key: b.dataset.claim, on: !b.classList.contains("on") }); return; }
     const id = b.closest(".item")?.dataset.id;
     if (!id) return;
-    const st = status(id);
+    const done = ["have", "bought"].includes(status(id));
     if (b.dataset.tick !== undefined) {
-      // cupboard and kit: tick means "we have it"; everything on a shop list: tick means "sorted"
-      const check = isCheck(id) && st !== "need" && st !== "bought";
-      const next = check ? (st === "have" ? null : "have") : st === "bought" ? (isCheck(id) ? "need" : null) : "bought";
-      if (next === "have" || next === "bought") { recent.set(id, Date.now()); setTimeout(renderShops, 5100); }
-      send({ kind: "item", id, status: next });
-    } else if (b.dataset.side === "need") send({ kind: "item", id, status: "need" });
+      if (!done) { recent.set(id, Date.now()); setTimeout(renderShops, 5100); }
+      send({ kind: "item", id, action: done ? "not_sorted" : "sorted", check: isCheck(id) });
+    } else if (b.dataset.side === "need") send({ kind: "item", id, action: "need_to_buy", check: true });
     else if (b.dataset.side === "remove") send({ kind: "remove", id });
   });
 
@@ -221,7 +288,7 @@
       const text = e.target.text.value.trim();
       if (!text) return;
       e.target.text.value = "";
-      send({ kind: "add", text });
+      send({ kind: "add", id: newExtraId(), text });
     }
   });
 
@@ -240,8 +307,7 @@
       const res = await fetch(base + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `request failed (${res.status})`);
-      if (body) load();
-      return data;
+      return data; // the page hears about the change over its live connection
     };
     const byField = { type: "string", description: "First name of the person you're helping. Defaults to the name saved on this page." };
     const tools = [
@@ -255,7 +321,7 @@
         name: "tick_item", title: "Tick an item off the list",
         description: "Mark a shopping item. sorted: bought, or (cupboard and kitchen kit items) we have it. need_to_buy: a cupboard or kit item is missing, so it joins the G20 list. not_sorted: undo. Use the item id from get_dinner_plan.",
         inputSchema: { type: "object", required: ["item_id", "status"], properties: {
-          item_id: { type: "string", description: "Item id from get_dinner_plan, e.g. fromagerie-cheeses" },
+          item_id: { type: "string", description: "Item id from get_dinner_plan, e.g. cheeses" },
           status: { type: "string", enum: ["sorted", "need_to_buy", "not_sorted"] }, by: byField } },
         execute: ({ item_id, status, by }) => call(`/items/${encodeURIComponent(item_id)}`, { status, by: who(by) }),
       },
@@ -289,7 +355,16 @@
     }
   }
 
-  renderMe(); render(); load();
-  setInterval(() => { if (!document.hidden) load(); }, 4000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
-})();
+  renderMe(); refresh(); load(); connect();
+  // backup check: every 4 s without a live connection, every 30 s with one
+  let ticks = 0;
+  setInterval(() => { if (!document.hidden && (!live() || ++ticks % 8 === 0)) load(); }, 4000);
+  setInterval(() => { if (live()) socket.send("ping"); }, 25000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) socket?.close(); // phones drop it in the background anyway
+    else { load(); connect(); }
+  });
+  addEventListener("online", () => { load(); connect(); });
+  // another tab on this phone changed the outbox
+  addEventListener("storage", e => { if (e.key === OUTBOX) { outbox = JSON.parse(e.newValue || "[]"); refresh(); } });
+}

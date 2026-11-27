@@ -32,7 +32,7 @@ button{font:inherit;color:var(--ink);background:none;border:0;cursor:pointer;tou
 section > .add{margin-top:16px}
 
 /* Shopping header stays in view while you scroll the list */
-.bar{position:sticky;top:0;z-index:2;background:var(--paper);display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+.bar{position:sticky;top:0;z-index:2;background:var(--paper);display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;
   border-bottom:1px solid var(--line);padding-top:max(8px,env(safe-area-inset-top));margin:0 -16px;padding-left:16px;padding-right:16px}
 .bar h2{border:0}
 .seg{display:flex;border:1px solid var(--line);border-radius:999px;background:#fff;margin-bottom:6px;flex:none}
@@ -65,6 +65,10 @@ section > .add{margin-top:16px}
 .station li{padding:6px 0}
 .station em{display:block;color:var(--muted);font-size:12px}
 .station li a{font-size:13px}
+
+/* In the sticky header, only shown when something's wrong: no connection, or a change the server turned down */
+.sync{flex-basis:100%;margin-bottom:8px;padding:8px 12px;border:1px solid var(--accent);background:var(--wash);color:var(--accent);font-size:13px}
+.sync[hidden]{display:none}
 
 .shop h3 a{text-decoration-color:var(--faint)}
 

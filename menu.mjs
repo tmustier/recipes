@@ -16,6 +16,8 @@ export function scaledDishes(menu, recipes) {
 }
 
 // Combine every ingredient of every dish into one list, keyed by the name in menu.items.
+// An item's id is what the live board stores ticks under, so it comes from the item's name only (moving an
+// item to another shop keeps its ticks). To rename an item that's already been ticked, give it "id": "<old id>".
 function shoppingList(menu, dishes) {
   const items = new Map();
   for (const dish of dishes) {
@@ -26,7 +28,7 @@ function shoppingList(menu, dishes) {
       if (info.skip) continue;
       const name = info.as ?? ing.name;
       info = menu.items[name];
-      const item = items.get(name) ?? { id: slug(name), name, fr: info.fr, shop: info.shop, note: info.note ?? null, sums: {}, words: null, dishes: new Set() };
+      const item = items.get(name) ?? { id: info.id ?? slug(name), name, fr: info.fr, shop: info.shop, note: info.note ?? null, sums: {}, words: null, dishes: new Set() };
       if (ing.qty.amount === null) item.words ??= ing.qty.unit;
       else {
         const [lo, hi] = [].concat(ing.qty.amount);
@@ -41,7 +43,13 @@ function shoppingList(menu, dishes) {
     const qty = Object.entries(sums).map(([unit, [lo, hi]]) => formatQuantity(scaleQuantity({ amount: lo === hi ? lo : [lo, hi], unit }, 1))).join(" + ") || words;
     return { ...item, qty, dishes: [...dishes].join(", ") };
   });
-  for (const x of menu.extras ?? []) list.push({ id: slug(`${x.shop}-${x.name}`), name: x.name, fr: null, shop: x.shop, note: x.note ?? null, qty: x.qty, dishes: "" });
+  for (const x of menu.extras ?? []) list.push({ id: x.id ?? slug(x.name), name: x.name, fr: null, shop: x.shop, note: x.note ?? null, qty: x.qty, dishes: "" });
+  const seen = new Set();
+  for (const i of list) {
+    if (seen.has(i.id)) throw new Error(`menus: two items have the id "${i.id}"; give one of them its own "id"`);
+    seen.add(i.id);
+    if (!menu.shops.some(s => s.key === i.shop)) throw new Error(`menus: "${i.name}" is in shop "${i.shop}", which isn't in "shops"`);
+  }
   return menu.shops.map(s => ({ ...s, items: list.filter(i => i.shop === s.key) }));
 }
 
@@ -65,7 +73,7 @@ export function renderMenu(menu, data) {
 <meta name="robots" content="noindex">
 <title>${esc(menu.title)}</title>
 <link rel="stylesheet" href="menu.css">
-<script src="menu.js" defer></script>
+<script type="module" src="menu.js"></script>
 </head>
 <body>
 <header>

@@ -21,4 +21,4 @@ jobs:
           node-version: 22
       - run: node build.mjs
       - if: env.CLOUDFLARE_API_TOKEN != ''
-        run: npx -y wrangler@4 deploy
+        run: node deploy.mjs

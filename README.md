@@ -31,7 +31,8 @@ For a meal with several dishes and cooks, write `menus/<id>.json`. Each dish is 
 The site is served by a Cloudflare Worker with static assets at **recipes.mustier.ai** (see [`wrangler.jsonc`](wrangler.jsonc)). To publish by hand:
 
 ```
-node build.mjs && npx wrangler deploy
+node deploy.mjs
+node --test   # rules for the shared shopping board
 ```
 
 The GitHub Action ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) does the same on every push to `main` once the repo secret `CLOUDFLARE_API_TOKEN` (a token with **Workers Scripts: Edit** permission) is set. `CLOUDFLARE_ACCOUNT_ID` is already set.

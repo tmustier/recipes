@@ -7,43 +7,92 @@
 //   POST /api/menus/<menu>/signups        { target: "shop:<key>" | "station:<key>", join, by }
 //   POST /api/menus/<menu>/extras         { text, by }
 //
-// Each menu gets one Durable Object holding who has which item and who's on which job.
+//   WebSocket /api/board/<menu>    the board again on every change, so phones update straight away
+//
+// Each menu gets one Durable Object holding who has which item and who's on which job. Every change, from a phone
+// or an assistant, is checked against the menu here and then applied by the object one at a time.
 import { DurableObject } from "cloudflare:workers";
+import { ACTIONS, applyChange, emptyBoard, newExtraId, EXTRA_ID } from "./recipes/board.js";
 
-const STATUSES = ["have", "bought", "need"];
 const text = (s, max) => String(s ?? "").trim().slice(0, max);
 const json = (body, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store", "access-control-allow-origin": "*" } });
 
 export class Board extends DurableObject {
-  async fetch(request) {
-    const state = (await this.ctx.storage.get("state")) ?? { items: {}, claims: {}, added: [], v: 0 };
-    if (request.method === "POST") {
-      const change = await request.json().catch(() => ({}));
-      const by = text(change.by, 40);
-      if (!by) return new Response("name required", { status: 400 });
-      if (change.kind === "item") {
-        const id = text(change.id, 80);
-        if (!id || !(change.status === null || STATUSES.includes(change.status))) return new Response("bad item", { status: 400 });
-        if (change.status) state.items[id] = { status: change.status, by, at: Date.now() };
-        else delete state.items[id];
-      } else if (change.kind === "claim") {
-        const key = text(change.key, 80);
-        const names = new Set(state.claims[key] ?? []);
-        change.on ? names.add(by) : names.delete(by);
-        state.claims[key] = [...names];
-      } else if (change.kind === "add") {
-        const t = text(change.text, 120);
-        if (!t || state.added.length >= 200) return new Response("bad add", { status: 400 });
-        state.added.push({ id: `added-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`, text: t, by });
-      } else if (change.kind === "remove") {
-        state.added = state.added.filter(a => a.id !== change.id);
-        delete state.items[change.id];
-      } else return new Response("unknown change", { status: 400 });
-      state.v++;
-      await this.ctx.storage.put("state", state);
-    }
-    return Response.json(state, { headers: { "cache-control": "no-store" } });
+  constructor(ctx, env) {
+    super(ctx, env);
+    // Load once and keep the board in memory. A change is then applied without any waiting between reading and
+    // writing it, so two changes arriving together can't both start from the same old copy.
+    ctx.blockConcurrencyWhile(async () => { this.board = (await ctx.storage.get("state")) ?? emptyBoard(); });
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
+
+  async fetch(request) {
+    if (request.headers.get("upgrade") === "websocket") {
+      const [client, server] = Object.values(new WebSocketPair());
+      this.ctx.acceptWebSocket(server);
+      server.send(JSON.stringify(this.board));
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    if (request.method === "POST") {
+      const change = await request.json(); // already checked by the worker
+      if (change.kind === "item" && change.extra && !this.board.added.some(a => a.id === change.id))
+        return json({ error: `no item with id ${change.id}; get the menu to see item ids` }, 404);
+      applyChange(this.board, change);
+      this.board.v++;
+      this.ctx.storage.put("state", this.board); // the reply waits until this is saved
+      const update = JSON.stringify(this.board);
+      for (const ws of this.ctx.getWebSockets()) try { ws.send(update); } catch {}
+    }
+    return json(this.board);
+  }
+
+  webSocketClose(ws, code) { try { ws.close(code); } catch {} }
+}
+
+// Menus only change when the site is deployed, which starts fresh workers, so each worker reads each menu once.
+const menus = new Map();
+function getMenu(env, url, id) {
+  if (!menus.has(id)) menus.set(id, env.ASSETS.fetch(new URL(`/${id}.menu.json`, url)).then(r => (r.ok ? r.json() : (menus.delete(id), null))));
+  return menus.get(id);
+}
+
+// Turn what a phone or assistant asked for into a change the board can apply, or say what's wrong with it.
+function toChange(menu, body) {
+  const by = text(body.by, 40);
+  if (!by) return { error: "say who you are: 'by' is the person's first name" };
+  const at = Date.now();
+  if (body.kind === "item") {
+    const id = text(body.id, 80);
+    const item = menu.shops.flatMap(s => s.items.map(i => ({ ...i, check: !!s.check }))).find(i => i.id === id);
+    if (!item && !EXTRA_ID.test(id)) return { error: `no item with id ${id}; get the menu to see item ids`, status: 404 };
+    if (!ACTIONS.includes(body.action)) return { error: `status must be ${ACTIONS.join(", ")}` };
+    if (body.action === "need_to_buy" && !item?.check) return { error: "need_to_buy is only for cupboard and kitchen kit items; use sorted or not_sorted" };
+    return { change: { kind: "item", id, action: body.action, check: !!item?.check, extra: !item, by, at } };
+  }
+  if (body.kind === "claim") {
+    const [kind, key] = String(body.key ?? "").split(":");
+    const ok = kind === "shop" ? menu.shops.some(s => s.key === key) : kind === "station" ? menu.stations.some(s => s.key === key) : false;
+    if (!ok) return { error: "target must be shop:<key> or station:<key> from the menu" };
+    return { change: { kind: "claim", key: `${kind}:${key}`, on: body.on !== false, by, at } };
+  }
+  if (body.kind === "add") {
+    const t = text(body.text, 120);
+    if (!t) return { error: "say what to add" };
+    return { change: { kind: "add", id: EXTRA_ID.test(body.id) ? body.id : newExtraId(), text: t, by, at } };
+  }
+  if (body.kind === "remove") {
+    if (!EXTRA_ID.test(body.id)) return { error: "only items someone added can be removed" };
+    return { change: { kind: "remove", id: body.id, by, at } };
+  }
+  return { error: "unknown change" };
+}
+
+// Apply a change: { board } when saved, or { error, status }.
+async function change(menu, board, body) {
+  const { change, error, status = 400 } = toChange(menu, body);
+  if (error) return { error, status };
+  const res = await board.fetch("https://board/", { method: "POST", body: JSON.stringify(change) });
+  return res.ok ? { board: await res.json() } : { error: (await res.json()).error, status: res.status };
 }
 
 // ───── assistant-friendly API ─────
@@ -78,16 +127,9 @@ function describe(menu, state, origin) {
   };
 }
 
-async function api(request, env, url, id, rest) {
-  const menuRes = await env.ASSETS.fetch(new URL(`/${id}.menu.json`, url));
-  if (!menuRes.ok) return json({ error: `no menu called ${id}` }, 404);
-  const menu = await menuRes.json();
+async function api(request, env, url, id, rest, menu) {
   const board = env.BOARD.get(env.BOARD.idFromName(id));
   const read = async () => (await board.fetch("https://board/")).json();
-  const write = async change => {
-    const res = await board.fetch("https://board/", { method: "POST", body: JSON.stringify(change) });
-    return res.ok ? null : await res.text();
-  };
 
   if (request.method === "GET" && !rest) return json(describe(menu, await read(), url.origin));
 
@@ -99,43 +141,28 @@ async function api(request, env, url, id, rest) {
 
   if (request.method !== "POST") return json({ error: "not found" }, 404);
   const body = await request.json().catch(() => ({}));
-  const by = text(body.by, 40);
-  if (!by) return json({ error: "say who you are: 'by' is the person's first name" }, 400);
-
-  let error;
-  if (rest.startsWith("items/")) {
-    const itemId = rest.slice(6);
-    const state = await read();
-    const shop = menu.shops.find(s => s.items.some(i => i.id === itemId));
-    if (!shop && !state.added.some(a => a.id === itemId)) return json({ error: `no item with id ${itemId}; get the menu to see item ids` }, 404);
-    const check = shop?.check;
-    const current = state.items[itemId]?.status;
-    const status = { sorted: check ? (current === "need" ? "bought" : "have") : "bought", need_to_buy: check ? "need" : null, not_sorted: null }[body.status];
-    if (status === undefined) return json({ error: "status must be sorted, need_to_buy or not_sorted" }, 400);
-    error = await write({ kind: "item", id: itemId, status, by });
-  } else if (rest === "signups") {
-    const [kind, key] = String(body.target ?? "").split(":");
-    const ok = kind === "shop" ? menu.shops.some(s => s.key === key) : kind === "station" ? menu.stations.some(s => s.key === key) : false;
-    if (!ok) return json({ error: "target must be shop:<key> or station:<key> from the menu" }, 400);
-    error = await write({ kind: "claim", key: `${kind}:${key}`, on: body.join !== false, by });
-  } else if (rest === "extras") {
-    error = await write({ kind: "add", text: body.text, by });
-  } else return json({ error: "not found" }, 404);
-
-  if (error) return json({ error }, 400);
-  return json(describe(menu, await read(), url.origin));
+  let asked;
+  if (rest.startsWith("items/")) asked = { kind: "item", id: decodeURIComponent(rest.slice(6)), action: body.status };
+  else if (rest === "signups") asked = { kind: "claim", key: body.target, on: body.join !== false };
+  else if (rest === "extras") asked = { kind: "add", text: body.text };
+  else return json({ error: "not found" }, 404);
+  const result = await change(menu, board, { ...asked, by: body.by });
+  return result.error ? json({ error: result.error }, result.status) : json(describe(menu, result.board, url.origin));
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const a = url.pathname.match(/^\/api\/menus\/([a-z0-9-]{1,40})(?:\/(.*))?$/);
-    if (a) return api(request, env, url, a[1], a[2] ?? "");
-    const m = url.pathname.match(/^\/api\/board\/([a-z0-9-]{1,40})$/);
+    const m = url.pathname.match(/^\/api\/(menus|board)\/([a-z0-9-]{1,40})(?:\/(.*))?$/);
     if (!m) return env.ASSETS.fetch(request);
     // only menus the build actually published get a board
-    const exists = await env.ASSETS.fetch(new URL(`/${m[1]}.menu.json`, url));
-    if (!exists.ok) return new Response("no such menu", { status: 404 });
-    return env.BOARD.get(env.BOARD.idFromName(m[1])).fetch(request);
+    const menu = await getMenu(env, url, m[2]);
+    if (!menu) return json({ error: `no menu called ${m[2]}` }, 404);
+    if (m[1] === "menus") return api(request, env, url, m[2], m[3] ?? "", menu);
+    if (m[3]) return json({ error: "not found" }, 404);
+    const board = env.BOARD.get(env.BOARD.idFromName(m[2]));
+    if (request.method !== "POST") return board.fetch(request); // the board, or a live connection to it
+    const result = await change(menu, board, await request.json().catch(() => ({})));
+    return result.error ? json({ error: result.error }, result.status) : json(result.board);
   },
 };
