@@ -1,6 +1,6 @@
 {
   "title": "Riri's 30th",
-  "when": "Saturday 28 November · 7:30pm",
+  "when": "Saturday 28 November, 7:30pm",
   "eaters": 10,
 
   "dishes": [
@@ -13,11 +13,11 @@
 
   "shops": [
     { "key": "butcher", "title": "Butcher", "where": "Boucherie, or the butcher stalls at Marché d'Auteuil" },
-    { "key": "market", "title": "Market", "where": "Marché d'Auteuil, place Jean Lorrain · Sat 7:00–14:30" },
+    { "key": "market", "title": "Market", "where": "Marché d'Auteuil, place Jean Lorrain, until 14:30" },
     { "key": "apero", "title": "Apéro board", "where": "Fromager, charcuterie, bakery" },
     { "key": "supermarket", "title": "Supermarket", "where": "Monoprix or similar" },
-    { "key": "pantry", "title": "Probably at home", "where": "Check the kitchen first" },
-    { "key": "kit", "title": "Kit to find", "where": "Check the kitchen" }
+    { "key": "pantry", "title": "Cupboard", "where": "Probably at home", "check": true },
+    { "key": "kit", "title": "Kitchen kit", "where": "Probably at home", "check": true }
   ],
 
   "items": {
@@ -65,7 +65,7 @@
   "extras": [
     { "shop": "apero", "name": "Saucisson", "qty": "2" },
     { "shop": "apero", "name": "Jambon or more charcuterie", "qty": "300 g" },
-    { "shop": "apero", "name": "Cheeses", "qty": "3 · ~700 g", "note": "e.g. Comté 24 mois, Brie de Meaux, a chèvre" },
+    { "shop": "apero", "name": "Cheeses", "qty": "3, about 700 g", "note": "e.g. Comté 24 mois, Brie de Meaux, a chèvre" },
     { "shop": "apero", "name": "Baguettes", "qty": "4" },
     { "shop": "apero", "name": "Cornichons and olives", "qty": "1 jar each" },
     { "shop": "apero", "name": "Crackers or grissini", "qty": "2 packs" },

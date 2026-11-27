@@ -61,7 +61,7 @@ const items = recipes.map(r => {
   return `${marker}
     <li data-search="${esc(r.search)}">
       <div class="head"><span class="date">${+d} ${MONTHS[m - 1]}</span> <a href="${esc(r.href)}">${esc(r.title)}</a></div>
-      <div class="desc">${r.facts.map(esc).join(" · ")}</div>
+      <div class="desc">${r.facts.map(esc).join(", ")}</div>
     </li>`;
 }).join("");
 

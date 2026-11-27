@@ -2,7 +2,7 @@
 // Each menu gets one Durable Object holding who has which item and who's on which job.
 import { DurableObject } from "cloudflare:workers";
 
-const STATUSES = ["have", "getting", "bought"];
+const STATUSES = ["have", "bought", "need"];
 const text = (s, max) => String(s ?? "").trim().slice(0, max);
 
 export class Board extends DurableObject {

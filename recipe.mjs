@@ -114,8 +114,9 @@ const inline = s => esc(s).replace(/\{([^}]+)\}/g, "$1").replace(/\*\*(.+?)\*\*/
 
 function renderNode(n, pad) {
   if (!n.inputs) {
-    const note = [n.note, n.alt && formatQuantity(n.alt)].filter(Boolean).join(" · ");
-    return `${pad}<div class="ing"><div class="label"><b>${esc(formatQuantity(n.qty))}</b><span>${esc(n.name)}</span>${note ? `<small>${esc(note)}</small>` : ""}</div></div>\n`;
+    const note = n.note;
+    const qty = formatQuantity(n.qty) + (n.alt ? ` (${formatQuantity(n.alt)})` : "");
+    return `${pad}<div class="ing"><div class="label"><b>${esc(qty)}</b><span>${esc(n.name)}</span>${note ? `<small>${esc(note)}</small>` : ""}</div></div>\n`;
   }
   const cls = n.type === "prep" ? "step" : `step ${n.type}`;
   const wait = n.wait ? ` data-wait="${esc(n.wait)}"` : "";
@@ -125,7 +126,7 @@ function renderNode(n, pad) {
 }
 
 export function renderPage(r, { scaledFrom } = {}) {
-  const facts = [...r.facts, ...(r.equipment.length ? [["Equipment", r.equipment.join(" · ")]] : [])];
+  const facts = [...r.facts, ...(r.equipment.length ? [["Equipment", r.equipment.join(", ")]] : [])];
   return `<!doctype html>
 <html lang="en">
 <head>
