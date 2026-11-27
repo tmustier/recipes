@@ -4,6 +4,7 @@
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { parseRecipe, renderPage, ingredients } from "./recipe.mjs";
+import { renderMenu } from "./menu.mjs";
 
 const SRC = "recipes", OUT = "dist";
 rmSync(OUT, { recursive: true, force: true });
@@ -22,9 +23,10 @@ function added(file) {
 
 for (const f of readdirSync(SRC).filter(f => !f.endsWith(".recipe"))) copyFileSync(`${SRC}/${f}`, `${OUT}/${f}`);
 
+const parsed = {};
 const recipes = readdirSync(SRC).filter(f => f.endsWith(".recipe")).map(f => {
   const name = f.replace(/\.recipe$/, "");
-  const r = parseRecipe(readFileSync(`${SRC}/${f}`, "utf8"), `${SRC}/${f}`);
+  const r = parsed[name] = parseRecipe(readFileSync(`${SRC}/${f}`, "utf8"), `${SRC}/${f}`);
   writeFileSync(`${OUT}/${name}.html`, renderPage(r));
   writeFileSync(`${OUT}/${name}.json`, JSON.stringify(r, null, 2) + "\n");
   return {
@@ -32,6 +34,15 @@ const recipes = readdirSync(SRC).filter(f => f.endsWith(".recipe")).map(f => {
     search: [r.title, ...ingredients(r).map(i => i.name)].join(" ").toLowerCase(),
   };
 }).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title));
+
+// shared menu pages: menus/<id>.json -> <id>.html (not listed on the index; shared by link)
+const menus = readdirSync("menus").filter(f => f.endsWith(".json"));
+for (const f of menus) {
+  const id = f.replace(/\.json$/, "");
+  const menu = JSON.parse(readFileSync(`menus/${f}`, "utf8"));
+  writeFileSync(`${OUT}/${id}.html`, renderMenu(id, menu, parsed));
+  writeFileSync(`${OUT}/${id}.menu.json`, "{}\n");
+}
 
 // copied to the clipboard by the button on the home page
 const AGENT_INSTRUCTIONS = "Fork github.com/lucasmeijer/recipes into my own GitHub account. " +

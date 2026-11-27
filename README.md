@@ -20,6 +20,10 @@ The agent follows the skills in [`.agents/skills/`](.agents/skills):
 
 Delete the recipes in `recipes/` that you don't want, and `crisp-groceries` if you don't use Crisp.
 
+## Menus
+
+For a meal with several dishes and cooks, write `menus/<id>.json`. The build makes `/<id>`: the dishes scaled to the headcount, one shopping list combined across every recipe and grouped by shop, and cooking stations people can join. Everyone enters their name once; marking items "at home", "getting it" or "bought" and joining stations syncs live between phones through `worker.js`. Menu pages are shared by link and not listed on the index.
+
 ## Publish
 
 `node build.mjs` renders each `recipes/<name>.recipe` into `dist/<name>.html` (plus the parsed data as `dist/<name>.json`), copies the shared files and generates `dist/index.html`, a searchable list of every recipe, newest first. It has no dependencies.
