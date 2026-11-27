@@ -61,12 +61,6 @@ section > .add{margin-top:16px}
 .item.done .name,.item.done .qty{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
 .item.done .fr{display:none}
 
-details{margin:4px 0 8px}
-summary{color:var(--muted);font-size:13px;padding:10px 0;cursor:pointer;list-style:none}
-summary::-webkit-details-marker{display:none}
-summary::before{content:"+ ";color:var(--faint)}
-details[open] summary::before{content:"− "}
-
 .station ol{margin-top:10px}
 .station li{padding:6px 0}
 .station em{display:block;color:var(--muted);font-size:12px}

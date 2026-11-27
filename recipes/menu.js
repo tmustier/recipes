@@ -1,8 +1,8 @@
 // Shared menu page: who's cooking what, and the shopping list everyone ticks off together.
 // Static content comes from the JSON in the page; the live state lives at /api/board/<id> (worker.js).
 //
-// Item states: none (still to buy), "bought", "have" (already at home), "need" (a cupboard or kit item
-// that turned out to be missing; it then shows on the shopping list).
+// Item states: none (still to buy), "bought" (sorted: bought or found at home), "have" (a cupboard or kit
+// item we have), "need" (a cupboard or kit item that's missing; it then shows on the shopping list).
 (() => {
   const menu = JSON.parse(document.getElementById("menu").textContent);
   const app = document.getElementById("app");
@@ -11,6 +11,7 @@
   let me = localStorage.getItem("menu-name") || "";
   let view = localStorage.getItem("menu-view") || "todo";
   let pending = 0;
+  let recent = new Map(); // id -> time ticked here; ticked items linger in "To buy" briefly so a slip is easy to undo
   let waiting = null; // the tap made before we knew who you are; replayed once you pick a name
 
   const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -93,35 +94,31 @@
 
     const buyItems = lists.flatMap(s => s.items);
     const toBuy = buyItems.filter(i => !status(i.id) || status(i.id) === "need").length;
-    const bought = buyItems.filter(i => status(i.id) === "bought").length;
-    const atHome = Object.values(state.items).filter(x => x.status === "have").length;
     document.getElementById("count").textContent = toBuy ? `${toBuy} to buy` : "all done";
     document.querySelectorAll("#view button").forEach(b => b.classList.toggle("on", b.dataset.view === view));
 
+    const lingering = id => recent.has(id) && Date.now() - recent.get(id) < 5000;
     const buyHtml = lists.map(s => {
-      const open = s.items.filter(i => status(i.id) !== "have");
-      const shown = view === "todo" ? open.filter(i => status(i.id) !== "bought") : open;
-      const home = s.items.filter(i => status(i.id) === "have");
-      if (!shown.length && !home.length && s.key === "added") return "";
+      const shown = view === "todo" ? s.items.filter(i => status(i.id) !== "bought" || lingering(i.id)) : s.items;
+      if (!shown.length && s.key === "added") return "";
       return `<div class="shop">
         <div class="row"><div><h3>${s.map ? `<a href="${esc(s.map)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</h3>${s.where ? `<div class="where">${esc(s.where)}</div>` : ""}</div>${s.key === "added" ? "" : claim(`shop:${s.key}`, "I'll go")}</div>
         ${shown.length ? `<ul>${shown.map(i => row(i, {
           done: status(i.id) === "bought",
-          who: status(i.id) === "bought" ? `Bought by ${by(i.id)}` : status(i.id) === "need" ? `Missing, said ${by(i.id)}` : i.added ? i.note : "",
-          side: i.added ? "remove" : status(i.id) === "need" ? "" : "have", sideLabel: i.added ? "Remove" : "We have it",
-        })).join("")}</ul>` : `<p class="empty">${open.length ? `All bought` : "Nothing to buy"}</p>`}
-        ${home.length ? `<details><summary>Already at home (${home.length})</summary><ul>${home.map(i => row(i, { done: true, who: `${by(i.id)} has it`, side: "undo", sideLabel: "Undo" })).join("")}</ul></details>` : ""}
+          who: status(i.id) === "bought" ? by(i.id) : status(i.id) === "need" ? `Missing, said ${by(i.id)}` : i.added ? i.note : "",
+          side: i.added && status(i.id) !== "bought" ? "remove" : "", sideLabel: "Remove",
+        })).join("")}</ul>` : `<p class="empty">All sorted</p>`}
       </div>`;
     }).join("");
 
     const checkHtml = check.map(s => {
       const items = s.items.filter(i => !["need", "bought"].includes(status(i.id)));
-      const shown = view === "todo" ? items.filter(i => status(i.id) !== "have") : items;
+      const shown = view === "todo" ? items.filter(i => status(i.id) !== "have" || lingering(i.id)) : items;
       const moved = s.items.length - items.length;
       return `<div class="shop">
         <div class="row"><div><h3>${esc(s.title)}</h3><div class="where">${esc(s.where)}. Tick what we have.</div></div>${claim(`shop:${s.key}`, "I'll check")}</div>
         ${shown.length ? `<ul>${shown.map(i => row(i, {
-          done: status(i.id) === "have", who: status(i.id) === "have" ? `${by(i.id)} has it` : "",
+          done: status(i.id) === "have", who: status(i.id) === "have" ? by(i.id) : "",
           side: status(i.id) === "have" ? "" : "need", sideLabel: "Need to buy",
         })).join("")}</ul>` : `<p class="empty">All checked</p>`}
         ${moved ? `<p class="empty">${moved} moved to the supermarket list</p>` : ""}
@@ -129,7 +126,6 @@
     }).join("");
 
     document.getElementById("shops").innerHTML = buyHtml + checkHtml;
-    document.getElementById("count").title = `${toBuy} to buy, ${bought} bought, ${atHome} at home`;
   }
 
   function render() { renderStations(); renderShops(); }
@@ -201,19 +197,18 @@
     if (!b) return;
     if (b.dataset.name) { setName(b.dataset.name); return; }
     if (b.dataset.act === "rename") { askName(); return; }
-    if (b.dataset.view) { view = b.dataset.view; localStorage.setItem("menu-view", view); renderShops(); return; }
+    if (b.dataset.view) { recent.clear(); view = b.dataset.view; localStorage.setItem("menu-view", view); renderShops(); return; }
     if (b.dataset.claim) { send({ kind: "claim", key: b.dataset.claim, on: !b.classList.contains("on") }); return; }
     const id = b.closest(".item")?.dataset.id;
     if (!id) return;
     const st = status(id);
     if (b.dataset.tick !== undefined) {
-      // a cupboard item: tick means "we have it"; anything else: tick means "bought"
-      const next = isCheck(id) && st !== "need" && st !== "bought" ? (st === "have" ? null : "have")
-        : st === "bought" ? (isCheck(id) ? "need" : null) : st === "have" ? null : "bought";
+      // cupboard and kit: tick means "we have it"; everything on a shop list: tick means "sorted"
+      const check = isCheck(id) && st !== "need" && st !== "bought";
+      const next = check ? (st === "have" ? null : "have") : st === "bought" ? (isCheck(id) ? "need" : null) : "bought";
+      if (next === "have" || next === "bought") { recent.set(id, Date.now()); setTimeout(renderShops, 5100); }
       send({ kind: "item", id, status: next });
-    } else if (b.dataset.side === "have") send({ kind: "item", id, status: "have" });
-    else if (b.dataset.side === "need") send({ kind: "item", id, status: "need" });
-    else if (b.dataset.side === "undo") send({ kind: "item", id, status: null });
+    } else if (b.dataset.side === "need") send({ kind: "item", id, status: "need" });
     else if (b.dataset.side === "remove") send({ kind: "remove", id });
   });
 
