@@ -225,6 +225,70 @@
     }
   });
 
+  // ───── WebMCP: the same actions as tools for an AI agent using this page (ChatGPT's desktop browser,
+  // Chrome with WebMCP on). They call the plain-language API in worker.js, then refresh what's on screen.
+  const mc = document.modelContext ?? navigator.modelContext;
+  if (mc?.registerTool) {
+    const base = `/api/menus/${menu.id}`;
+    const who = by => {
+      const name = String(by ?? me ?? "").trim().slice(0, 40);
+      if (!name) throw new Error("Ask the person for their first name and pass it as `by`.");
+      if (!me) { me = name; localStorage.setItem("menu-name", me); renderMe(); }
+      return name;
+    };
+    const call = async (path, body) => {
+      const res = await fetch(base + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `request failed (${res.status})`);
+      if (body) load();
+      return data;
+    };
+    const byField = { type: "string", description: "First name of the person you're helping. Defaults to the name saved on this page." };
+    const tools = [
+      {
+        name: "get_dinner_plan", title: "Get the dinner plan",
+        description: `Everything about ${menu.title}: dishes, each shop with address, hours, map link and who's going, every item with quantity, French name, status and id, extras, and the cooking stations with who has joined. Call this first and after changes; other people update it live.`,
+        inputSchema: { type: "object", properties: {} }, annotations: { readOnlyHint: true },
+        execute: () => call(""),
+      },
+      {
+        name: "tick_item", title: "Tick an item off the list",
+        description: "Mark a shopping item. sorted: bought, or (cupboard and kitchen kit items) we have it. need_to_buy: a cupboard or kit item is missing, so it joins the G20 list. not_sorted: undo. Use the item id from get_dinner_plan.",
+        inputSchema: { type: "object", required: ["item_id", "status"], properties: {
+          item_id: { type: "string", description: "Item id from get_dinner_plan, e.g. fromagerie-cheeses" },
+          status: { type: "string", enum: ["sorted", "need_to_buy", "not_sorted"] }, by: byField } },
+        execute: ({ item_id, status, by }) => call(`/items/${encodeURIComponent(item_id)}`, { status, by: who(by) }),
+      },
+      {
+        name: "sign_up", title: "Join or leave a shop run or cooking station",
+        description: "Sign someone up to go to a shop or take a cooking station, or take them off it. Keys come from get_dinner_plan.",
+        inputSchema: { type: "object", required: ["target"], properties: {
+          target: { type: "string", description: "shop:<key> or station:<key>, e.g. shop:market or station:beef" },
+          join: { type: "boolean", description: "false to leave; defaults to true" }, by: byField } },
+        execute: ({ target, join = true, by }) => call("/signups", { target, join, by: who(by) }),
+      },
+      {
+        name: "add_to_list", title: "Add something to the shopping list",
+        description: "Add an extra item that isn't on the list yet, e.g. candles or champagne.",
+        inputSchema: { type: "object", required: ["text"], properties: { text: { type: "string", description: "What to buy, with a quantity if known" }, by: byField } },
+        execute: ({ text, by }) => call("/extras", { text, by: who(by) }),
+      },
+      {
+        name: "get_recipe", title: "Get a dish's recipe",
+        description: "One dish as numbered steps in cooking order, with quantities already scaled for this dinner.",
+        inputSchema: { type: "object", required: ["recipe"], properties: { recipe: { type: "string", enum: menu.dishes.map(d => d.href.replace(`${menu.id}-`, "")) } } },
+        annotations: { readOnlyHint: true },
+        execute: ({ recipe }) => call(`/recipes/${encodeURIComponent(recipe)}`),
+      },
+    ];
+    // a thrown error reaches the agent only as "Tool execution failed", so hand back the reason instead
+    for (const t of tools) {
+      const run = t.execute;
+      t.execute = async input => { try { return await run(input ?? {}); } catch (e) { return { error: e.message }; } };
+      Promise.resolve(mc.registerTool(t)).catch(e => console.warn("WebMCP", t.name, e));
+    }
+  }
+
   renderMe(); render(); load();
   setInterval(() => { if (!document.hidden) load(); }, 4000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
