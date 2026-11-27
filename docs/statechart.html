@@ -96,13 +96,13 @@ stateDiagram-v2
   Sending --> Retry: no signal
   Retry --> Sending: after 1-15 s, or signal back
 </pre></div>
-  <div class="card"><h3>Live connection</h3><p>Hears other people's changes straight away. Also checks the server every 30 s when live, every 4 s when not.</p>
+  <div class="card"><h3>Live connection</h3><p>Hears other people's changes straight away. Pings every 15 s; silent for 20 s counts as dropped. Checks the server itself every 4 s only while not live.</p>
 <pre class="mermaid">
 stateDiagram-v2
   [*] --> Connecting
   Down: Disconnected
   Connecting --> Live
-  Live --> Down: dropped
+  Live --> Down: dropped or silent 20 s
   Down --> Connecting: after 1-15 s
   Live --> Paused: in background
   Paused --> Connecting: back in front

@@ -6,7 +6,8 @@
 //   - Every tap goes into an outbox kept on the phone, shows straight away and is sent in order. If it can't
 //     be sent (no signal), it stays in the outbox, is retried, and survives a reload. Resending is safe.
 //   - The page shows the server's latest board with the outbox's changes on top.
-//   - The server pushes the board over a WebSocket on every change. A check every few seconds is the backup.
+//   - The server pushes the board over a WebSocket on every change. A heartbeat spots a connection that has
+//     died without closing and reconnects. Only while there's no connection does the page check by itself.
 //   - Each board has a version number; an older one than we already have is ignored.
 import { applyChange, newExtraId } from "./board.js";
 
@@ -216,17 +217,25 @@ import { applyChange, newExtraId } from "./board.js";
   }
 
   // Live updates. The server sends the whole board when we connect and after every change.
-  let socket = null, socketWait = 1000;
+  let socket = null, socketWait = 1000, heard = 0; // heard: when this connection last opened or sent anything
   function connect() {
     if (document.hidden || socket) return;
     socket = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}${API}`);
-    socket.onopen = () => { socketWait = 1000; setOffline(false); flush(); };
-    socket.onmessage = e => { if (e.data !== "pong") adopt(JSON.parse(e.data)); };
-    socket.onclose = () => {
-      socket = null;
-      if (!document.hidden) setTimeout(connect, socketWait);
-      socketWait = Math.min(socketWait * 2, 15000);
-    };
+    heard = Date.now();
+    socket.onopen = () => { heard = Date.now(); socketWait = 1000; setOffline(false); flush(); };
+    socket.onmessage = e => { heard = Date.now(); if (e.data !== "pong") adopt(JSON.parse(e.data)); };
+    socket.onclose = () => drop();
+  }
+
+  // Forget the connection now, rather than wait for a goodbye a dead one may never send, and try again.
+  function drop() {
+    const old = socket;
+    if (!old) return;
+    socket = null;
+    old.onclose = old.onmessage = null;
+    old.close();
+    if (!document.hidden) setTimeout(connect, socketWait);
+    socketWait = Math.min(socketWait * 2, 15000);
   }
   const live = () => socket?.readyState === WebSocket.OPEN;
 
@@ -356,12 +365,17 @@ import { applyChange, newExtraId } from "./board.js";
   }
 
   renderMe(); refresh(); load(); connect();
-  // backup check: every 4 s without a live connection, every 30 s with one
-  let ticks = 0;
-  setInterval(() => { if (!document.hidden && (!live() || ++ticks % 8 === 0)) load(); }, 4000);
-  setInterval(() => { if (live()) socket.send("ping"); }, 25000);
+  // Heartbeat: ping every 15 s; the server answers "pong". Nothing heard for 20 s means the connection is dead,
+  // even if the phone hasn't noticed (common when it switches between wifi and 4G), so start a new one.
+  // agent-default (not a user rule): 2026-11-27, both timings
+  setInterval(() => {
+    if (socket && Date.now() - heard > 20000) drop();
+    else if (live()) socket.send("ping");
+  }, 15000);
+  // with no live connection, check by hand every 4 s
+  setInterval(() => { if (!document.hidden && !live()) load(); }, 4000);
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) socket?.close(); // phones drop it in the background anyway
+    if (document.hidden) drop(); // phones cut it in the background anyway
     else { load(); connect(); }
   });
   addEventListener("online", () => { load(); connect(); });
