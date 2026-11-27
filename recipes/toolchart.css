@@ -34,6 +34,7 @@ body > header > *{margin:0;font-weight:400}
 body > header h1{flex-basis:100%;font-size:14px;color:var(--ink);letter-spacing:.02em;margin-bottom:8px}
 body > header em{font-style:normal;color:var(--faint);margin-right:6px}
 body > header span{color:var(--ink)}
+body > header .scaled{flex-basis:100%;color:var(--muted)}
 
 /* ───── the chart ───── */
 .toolchart{

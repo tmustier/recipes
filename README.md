@@ -22,7 +22,7 @@ Delete the recipes in `recipes/` that you don't want, and `crisp-groceries` if y
 
 ## Menus
 
-For a meal with several dishes and cooks, write `menus/<id>.json`. The build makes `/<id>`: the dishes scaled to the headcount, one shopping list combined across every recipe and grouped by shop, and cooking stations people can join. Everyone enters their name once; marking items "at home", "getting it" or "bought" and joining stations syncs live between phones through `worker.js`. Menu pages are shared by link and not listed on the index.
+For a meal with several dishes and cooks, write `menus/<id>.json`. Each dish is `{ "recipe": "...", "serves": 10 }` (or `"scale": 2` for whole batches, like cakes). The build makes `/<id>-<recipe>`, a copy of each recipe already scaled, and `/<id>`: links to those, one shopping list combined across every recipe and grouped by shop, and cooking stations people can join. Everyone enters their name once; marking items "at home", "getting it" or "bought" and joining stations syncs live between phones through `worker.js`. Menu pages are shared by link and not listed on the index.
 
 ## Publish
 

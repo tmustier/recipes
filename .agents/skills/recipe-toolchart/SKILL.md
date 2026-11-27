@@ -44,7 +44,7 @@ Serve: Ladle sauce over the shanks and scatter with mint.
 **Tree:** indent two spaces per level. A line's inputs are the lines indented under it, top to bottom, with the main flow on top and side prep below. Lines starting with `//` are comments.
 
 **Step:** `Verb (options): text`.
-- One verb, then one or two short sentences (under ~30 words). Put the critical numbers in `**double stars**`: temperatures, times, sizes, amounts, and warnings like `**Heat OFF**`.
+- One verb, then one or two short sentences (under ~30 words). Put the critical numbers in `**double stars**`: temperatures, times, sizes, amounts, and warnings like `**Heat OFF**`. Wrap an amount that should change when the recipe is scaled in braces, e.g. `**{360 ml}**`; temperatures, times and sizes stay as they are.
 - Options, comma-separated and all optional: `heat` for anything on the stove or in the oven, `combine` for bringing components together (no option means prep: cut, whisk, measure); a time like `~8 min`; and `then <label>` to label the arrow when the result has to wait for a longer branch, e.g. `then set aside`, `then keep warm`, `then chill`. Use `then` only where waiting is meaningful.
 - The top-level step is always the final step and is styled as such.
 

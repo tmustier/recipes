@@ -110,7 +110,7 @@ function parseIngredient(s, line, fail) {
 // ───── rendering ─────
 
 const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+const inline = s => esc(s).replace(/\{([^}]+)\}/g, "$1").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
 
 function renderNode(n, pad) {
   if (!n.inputs) {
@@ -124,7 +124,7 @@ function renderNode(n, pad) {
     `${pad}  </div>\n${pad}  <div class="do"><h3>${esc(n.verb)}</h3><p>${inline(n.text)}</p>${n.time ? `<time>${esc(n.time)}</time>` : ""}</div>\n${pad}</div>\n`;
 }
 
-export function renderPage(r) {
+export function renderPage(r, { scaledFrom } = {}) {
   const facts = [...r.facts, ...(r.equipment.length ? [["Equipment", r.equipment.join(" · ")]] : [])];
   return `<!doctype html>
 <html lang="en">
@@ -139,7 +139,7 @@ export function renderPage(r) {
 
 <header>
   <h1>${esc(r.title)}</h1>
-${facts.map(([k, v]) => `  <span><em>${esc(k)}</em> ${esc(v)}</span>\n`).join("")}</header>
+${facts.map(([k, v]) => `  <span><em>${esc(k)}</em> ${esc(v)}</span>\n`).join("")}${scaledFrom ? `  <span class="scaled"><em>Scaled</em> ×${formatNumber(r.scale)} from <a href="${esc(scaledFrom)}">the original</a>, which serves ${formatNumber(r.serves / r.scale)}</span>\n` : ""}</header>
 
 <div class="toolchart">
 ${renderNode(r.root, "  ")}</div>
@@ -155,3 +155,44 @@ export const ingredients = r => {
   walk(r.root);
   return out;
 };
+
+// ───── scaling ─────
+
+const COUNTED = ["", "clove", "cloves", "sprig", "sprigs", "bunch", "bunches", "sheet", "sheets", "rib", "ribs"];
+const SPOONS = ["tsp", "Tbsp", "cup", "cups"];
+const PLURALS = { clove: "cloves", sprig: "sprigs", bunch: "bunches", sheet: "sheets", rib: "ribs", cup: "cups" };
+
+// Round a scaled amount to something you'd measure or buy: whole shallots, half spoons, 5 g steps.
+function round(n, unit) {
+  if (COUNTED.includes(unit)) return Math.max(1, Math.round(n));
+  if (SPOONS.includes(unit)) return Math.max(0.5, Math.round(n * 2) / 2);
+  if (unit === "kg" || unit === "l") return Math.round(n * 20) / 20;
+  if (unit === "g" || unit === "ml") return n <= 100 ? Math.round(n / 5) * 5 : n <= 1000 ? Math.round(n / 10) * 10 : Math.round(n / 50) * 50;
+  return n >= 1 ? Math.round(n * 4) / 4 : Math.round(n * 100) / 100;
+}
+
+// 1800 g reads better as 1.8 kg
+function tidy(amount, unit) {
+  const big = Array.isArray(amount) ? amount[1] : amount;
+  const per = x => Array.isArray(x) ? x.map(a => a / 1000) : x / 1000;
+  if (unit === "g" && big >= 1000) return { amount: per(amount), unit: "kg" };
+  if (unit === "ml" && big >= 1000) return { amount: per(amount), unit: "l" };
+  return { amount, unit };
+}
+
+export function scaleQuantity(q, factor) {
+  if (!q || q.amount === null) return q;
+  const [lo, hi] = [].concat(q.amount).map(a => round(a * factor, q.unit));
+  const unit = (hi ?? lo) > 1 && PLURALS[q.unit] ? PLURALS[q.unit] : q.unit;
+  return tidy(hi === undefined || hi === lo ? lo : [lo, hi], unit);
+}
+
+// A copy of the recipe for `factor` times as many people. Ingredient amounts and {amounts} in step text scale;
+// times, temperatures and sizes don't.
+export function scaleRecipe(r, factor) {
+  const walk = n => n.inputs
+    ? { ...n, text: n.text.replace(/\{([^}]+)\}/g, (_, q) => `{${formatQuantity(scaleQuantity(parseQuantity(q), factor))}}`), inputs: n.inputs.map(walk) }
+    : { ...n, qty: scaleQuantity(n.qty, factor), alt: n.alt && scaleQuantity(n.alt, factor) };
+  const serves = r.serves && Math.round(r.serves * factor);
+  return { ...r, scale: factor, serves, facts: r.facts.map(([k, v]) => [k, k === "Serves" ? String(serves) : v]), root: walk(r.root) };
+}

@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { parseRecipe, renderPage, ingredients } from "./recipe.mjs";
-import { renderMenu } from "./menu.mjs";
+import { scaledDishes, menuData, renderMenu } from "./menu.mjs";
 
 const SRC = "recipes", OUT = "dist";
 rmSync(OUT, { recursive: true, force: true });
@@ -40,7 +40,9 @@ const menus = readdirSync("menus").filter(f => f.endsWith(".json"));
 for (const f of menus) {
   const id = f.replace(/\.json$/, "");
   const menu = JSON.parse(readFileSync(`menus/${f}`, "utf8"));
-  writeFileSync(`${OUT}/${id}.html`, renderMenu(id, menu, parsed));
+  const dishes = scaledDishes(menu, parsed);
+  for (const d of dishes) writeFileSync(`${OUT}/${id}-${d.recipe}.html`, renderPage(d.scaled, { scaledFrom: d.recipe }));
+  writeFileSync(`${OUT}/${id}.html`, renderMenu(menu, menuData(id, menu, dishes)));
   writeFileSync(`${OUT}/${id}.menu.json`, "{}\n");
 }
 

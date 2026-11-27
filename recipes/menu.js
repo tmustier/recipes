@@ -15,13 +15,11 @@
 
   app.innerHTML = `
     <section class="me" id="me"></section>
-    ${menu.intro ? `<p class="intro">${esc(menu.intro)}</p>` : ""}
     <section>
       <h2>Menu <span>for ${menu.eaters}</span></h2>
       <ul class="dishes">${menu.dishes.map(d => `
-        <li><a href="${esc(d.href)}">${esc(d.title)}</a> <span class="muted">×${d.scale}${d.serves ? ` · serves ${d.serves}` : ""}</span>${d.label ? `<div class="muted">${esc(d.label)}</div>` : ""}</li>`).join("")}
+        <li><a href="${esc(d.href)}">${esc(d.title)}</a>${d.label ? ` <span class="muted">· ${esc(d.label)}</span>` : ""}</li>`).join("")}
       </ul>
-      <p class="muted small">Recipe pages show one batch; multiply the amounts by the × number.</p>
     </section>
     <section>
       <h2>Shopping <span id="count"></span></h2>
@@ -32,14 +30,14 @@
       <form id="add" class="add"><input name="text" placeholder="Add something we need…" autocomplete="off"><button>Add</button></form>
     </section>
     <section>
-      <h2>Jobs <span>tap a station to join it</span></h2>
+      <h2>Jobs</h2>
       <div id="stations"></div>
     </section>`;
 
   function renderMe() {
     document.getElementById("me").innerHTML = me
       ? `You're <b>${esc(me)}</b> · <button class="link" data-act="rename">change</button>`
-      : `<form id="name" class="add"><input name="name" placeholder="Your name, so others see who's doing what" autocomplete="given-name" required><button>Save</button></form>`;
+      : `<form id="name" class="add"><input name="name" placeholder="Your name" autocomplete="given-name" required><button>Save</button></form>`;
   }
 
   function claim(key, label = "Join") {
@@ -52,7 +50,7 @@
     document.getElementById("stations").innerHTML = menu.stations.map(s => `
       <div class="station">
         <div class="row"><h3>${esc(s.name)}</h3>${claim(`station:${s.key}`)}</div>
-        <ol>${s.jobs.map(j => `<li><em>${esc(j.when)}</em> ${esc(j.text)}${j.recipe ? ` <a href="${esc(j.recipe)}">${esc(j.title)} →</a>` : ""}</li>`).join("")}</ol>
+        <ol>${s.jobs.map(j => `<li><em>${esc(j.when)}</em> ${esc(j.text)}${j.href ? ` <a href="${esc(j.href)}">${esc(j.title)} →</a>` : ""}</li>`).join("")}</ol>
       </div>`).join("");
   }
 
