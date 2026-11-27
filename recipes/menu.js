@@ -11,6 +11,7 @@
   let me = localStorage.getItem("menu-name") || "";
   let view = localStorage.getItem("menu-view") || "todo";
   let pending = 0;
+  let waiting = null; // the tap made before we knew who you are; replayed once you pick a name
 
   const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const status = id => state.items[id]?.status;
@@ -35,12 +36,21 @@
     <section>
       <h2>Jobs</h2>
       <div id="stations"></div>
-    </section>`;
+    </section>
+    <div class="sheet" id="sheet" hidden>
+      <div class="scrim" data-act="close"></div>
+      <form class="panel" id="who">
+        <h3>Who's this?</h3>
+        <p class="muted">So everyone can see who's doing what. You only do this once.</p>
+        <div class="names" id="known"></div>
+        <div class="add"><input name="name" placeholder="Your name" autocomplete="given-name" enterkeyhint="go" maxlength="40"><button>Go</button></div>
+      </form>
+    </div>`;
 
   function renderMe() {
     document.getElementById("me").innerHTML = me
       ? `You're <b>${esc(me)}</b> <button class="link" data-act="rename">change</button>`
-      : `<form id="name" class="add"><input name="name" placeholder="Your name" autocomplete="given-name" enterkeyhint="done" required><button>Save</button></form>`;
+      : `<button class="pill" data-act="rename">Add your name</button>`;
   }
 
   function claim(key, label) {
@@ -94,7 +104,7 @@
       const home = s.items.filter(i => status(i.id) === "have");
       if (!shown.length && !home.length && s.key === "added") return "";
       return `<div class="shop">
-        <div class="row"><div><h3>${esc(s.title)}</h3>${s.where ? `<div class="where">${esc(s.where)}</div>` : ""}</div>${s.key === "added" ? "" : claim(`shop:${s.key}`, "I'll go")}</div>
+        <div class="row"><div><h3>${s.map ? `<a href="${esc(s.map)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</h3>${s.where ? `<div class="where">${esc(s.where)}</div>` : ""}</div>${s.key === "added" ? "" : claim(`shop:${s.key}`, "I'll go")}</div>
         ${shown.length ? `<ul>${shown.map(i => row(i, {
           done: status(i.id) === "bought",
           who: status(i.id) === "bought" ? `Bought by ${by(i.id)}` : status(i.id) === "need" ? `Missing, said ${by(i.id)}` : i.added ? i.note : "",
@@ -134,7 +144,7 @@
 
   // Show the change straight away, then save it; the server's copy wins when it answers.
   async function send(change) {
-    if (!me) { askName(); return; }
+    if (!me) { askName(change); return; }
     apply(change);
     render();
     pending++;
@@ -154,10 +164,34 @@
     if (c.kind === "remove") state.added = state.added.filter(a => a.id !== c.id);
   }
 
-  function askName() {
-    me = ""; renderMe();
-    const input = document.querySelector("#name input");
-    input.scrollIntoView({ block: "center", behavior: "smooth" }); input.focus();
+  // names already on the board, so someone on a second phone (or who cleared it) can just tap theirs
+  function knownNames() {
+    const all = [...Object.values(state.claims).flat(), ...Object.values(state.items).map(i => i.by), ...state.added.map(a => a.by)];
+    return [...new Set(all.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  }
+
+  function askName(change = null) {
+    waiting = change;
+    document.getElementById("known").innerHTML = knownNames().map(n => `<button type="button" class="pill" data-name="${esc(n)}">${esc(n)}</button>`).join("");
+    document.getElementById("sheet").hidden = false;
+    document.body.classList.add("locked");
+    if (!knownNames().length) document.querySelector("#who input").focus();
+  }
+
+  function closeSheet() {
+    document.getElementById("sheet").hidden = true;
+    document.body.classList.remove("locked");
+    document.querySelector("#who input").value = "";
+  }
+
+  function setName(name) {
+    name = name.trim().slice(0, 40);
+    if (!name) return;
+    me = name;
+    localStorage.setItem("menu-name", me);
+    closeSheet(); renderMe(); render();
+    const change = waiting; waiting = null;
+    if (change) send(change);
   }
 
   const isCheck = id => menu.shops.some(s => s.check && s.items.some(i => i.id === id));
@@ -165,7 +199,8 @@
   app.addEventListener("click", e => {
     const b = e.target.closest("button");
     if (!b) return;
-    if (b.dataset.act === "rename") { localStorage.removeItem("menu-name"); askName(); return; }
+    if (b.dataset.name) { setName(b.dataset.name); return; }
+    if (b.dataset.act === "rename") { askName(); return; }
     if (b.dataset.view) { view = b.dataset.view; localStorage.setItem("menu-view", view); renderShops(); return; }
     if (b.dataset.claim) { send({ kind: "claim", key: b.dataset.claim, on: !b.classList.contains("on") }); return; }
     const id = b.closest(".item")?.dataset.id;
@@ -182,13 +217,12 @@
     else if (b.dataset.side === "remove") send({ kind: "remove", id });
   });
 
+  app.addEventListener("click", e => { if (e.target.dataset.act === "close") { waiting = null; closeSheet(); } });
+
   app.addEventListener("submit", e => {
     e.preventDefault();
-    if (e.target.id === "name") {
-      me = e.target.name.value.trim().slice(0, 40);
-      if (!me) return;
-      localStorage.setItem("menu-name", me); renderMe(); render();
-    } else if (e.target.id === "add") {
+    if (e.target.id === "who") setName(e.target.name.value);
+    else if (e.target.id === "add") {
       const text = e.target.text.value.trim();
       if (!text) return;
       e.target.text.value = "";

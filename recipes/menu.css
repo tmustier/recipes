@@ -71,3 +71,18 @@ details[open] summary::before{content:"− "}
 .station li{padding:6px 0}
 .station em{display:block;color:var(--muted);font-size:12px}
 .station li a{font-size:13px}
+
+.shop h3 a{text-decoration-color:var(--faint)}
+
+/* "Who's this?" card, shown the first time you tap something. Pinned to the top so the keyboard never covers it. */
+body.locked{overflow:hidden}
+.sheet{position:fixed;inset:0;z-index:10}
+.sheet[hidden]{display:none}
+.scrim{position:absolute;inset:0;background:rgba(29,29,27,.3)}
+.panel{position:absolute;left:12px;right:12px;top:max(16px,env(safe-area-inset-top));max-width:520px;margin:0 auto;background:var(--paper);
+  border:1px solid var(--line);border-radius:14px;padding:20px 18px;box-shadow:0 12px 40px rgba(0,0,0,.12);animation:drop .15s ease-out}
+.panel p{font-size:13px;margin:4px 0 14px}
+.names{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.names:empty{display:none}
+.names .pill{font-size:15px;padding:9px 16px}
+@keyframes drop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
