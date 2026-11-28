@@ -8,7 +8,7 @@
     { "recipe": "beef-wellington", "serves": 10 },
     { "recipe": "shallot-jus", "serves": 10 },
     { "recipe": "pommes-puree", "serves": 10 },
-    { "recipe": "haricots-verts-amandine", "serves": 10 },
+    { "recipe": "asparagus-amandine", "serves": 10 },
     { "recipe": "tokyo-gateau", "scale": 2, "label": "two loaves" }
   ],
 
@@ -33,7 +33,7 @@
     "Fresh thyme": { "fr": "Thym frais", "shop": "fruitier" },
     "Chives": { "fr": "Ciboulette", "shop": "fruitier" },
     "Potatoes": { "fr": "Pommes de terre à chair fondante (Agata, Monalisa)", "shop": "fruitier" },
-    "Green beans": { "fr": "Haricots verts extra-fins", "shop": "fruitier" },
+    "Green asparagus": { "fr": "Asperges vertes", "shop": "fruitier", "note": "About 3 bottes. Medium spears, not the very thin or very thick ones" },
     "Garlic": { "fr": "Ail", "shop": "fruitier" },
     "Lemon": { "fr": "Citrons", "shop": "fruitier" },
 
@@ -105,9 +105,9 @@
       "key": "sides", "name": "Sides and sauce",
       "jobs": [
         { "when": "Mid-afternoon", "text": "Slice the shallots and garlic. Reduce the stock and wine, then turn the heat off.", "recipe": "shallot-jus" },
-        { "when": "Mid-afternoon", "text": "Blanch the beans and chill them in iced water. Dry, then set aside.", "recipe": "haricots-verts-amandine" },
+        { "when": "Mid-afternoon", "text": "Blanch the asparagus and chill it in iced water. Dry, then set aside.", "recipe": "asparagus-amandine" },
         { "when": "About 1 hr before eating", "text": "Potatoes on. Rice and finish the purée, then keep it warm.", "recipe": "pommes-puree" },
-        { "when": "While the beef rests", "text": "Finish the jus. Toast the almonds and toss the beans.", "recipe": "haricots-verts-amandine" }
+        { "when": "While the beef rests", "text": "Finish the jus. Toast the almonds and toss the asparagus.", "recipe": "asparagus-amandine" }
       ]
     },
     {
