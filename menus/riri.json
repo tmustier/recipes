@@ -44,7 +44,7 @@
     "Light cane sugar": { "fr": "Sucre de canne blond", "shop": "supermarket" },
     "Prepared horseradish": { "fr": "Raifort", "shop": "supermarket", "note": "If you can't find it, use more hot mustard" },
     "Beef stock": { "fr": "Bouillon de bœuf / fond de veau", "shop": "supermarket" },
-    "Chicken stock": { "fr": "Bouillon de volaille", "shop": "supermarket", "note": "Optional in the purée" },
+    "Chicken stock": { "fr": "Bouillon de volaille", "shop": "supermarket", "note": "For the asparagus (600 ml) and the purée" },
     "Red wine": { "fr": "Vin rouge", "shop": "supermarket" },
     "Cognac": { "fr": "Cognac", "shop": "supermarket", "note": "Check the house first" },
 
@@ -83,35 +83,35 @@
     {
       "key": "beef", "name": "Beef",
       "jobs": [
-        { "when": "First, once shopping's in", "text": "Season and sear the fillet, coat it with horseradish mustard, then fridge it uncovered.", "recipe": "beef-wellington" },
-        { "when": "Mid-afternoon", "text": "With Duxelles: roll the fillet up in the prosciutto layer, then chill.", "recipe": "beef-wellington" },
-        { "when": "About 1¼ hr before eating", "text": "Egg-wash, score and bake to 43–49 °C at the centre.", "recipe": "beef-wellington" },
-        { "when": "At the end", "text": "Rest 10 min, then carve with the serrated knife. Chives and salt on the cut faces.", "recipe": "beef-wellington" }
+        { "when": "About 14:45, once the beef is in", "text": "Season and sear the fillet, coat it with horseradish mustard, then fridge it uncovered.", "recipe": "beef-wellington" },
+        { "when": "About 16:15", "text": "With Duxelles: roll the fillet up in the prosciutto layer, then chill.", "recipe": "beef-wellington" },
+        { "when": "19:15 oven to 220 °C; in about 19:35", "text": "Egg-wash, score and bake to 43–49 °C at the centre.", "recipe": "beef-wellington" },
+        { "when": "About 20:15", "text": "Rest 10 min, then carve with the serrated knife. Chives and salt on the cut faces.", "recipe": "beef-wellington" }
       ]
     },
     {
       "key": "duxelles", "name": "Duxelles and pastry",
       "jobs": [
-        { "when": "First, once shopping's in", "text": "Duxelles and foie gras, then chill.", "recipe": "beef-wellington" },
-        { "when": "Mid-afternoon", "text": "Phyllo, prosciutto and duxelles layer; with Beef, roll the fillet. Roll out the pastry and wrap. Chill at least 30 min.", "recipe": "beef-wellington" },
+        { "when": "About 14:45", "text": "Duxelles and foie gras, then chill.", "recipe": "beef-wellington" },
+        { "when": "About 16:15, then wrap about 17:00", "text": "Phyllo, prosciutto and duxelles layer; with Beef, roll the fillet. Roll out the pastry and wrap. Chill at least 30 min.", "recipe": "beef-wellington" },
         { "when": "Then", "text": "Mince the chives, and help Sides." }
       ]
     },
     {
       "key": "sides", "name": "Sides and sauce",
       "jobs": [
-        { "when": "Mid-afternoon", "text": "Slice the shallots and garlic. Reduce the stock and wine, then turn the heat off.", "recipe": "shallot-jus" },
-        { "when": "Mid-afternoon", "text": "Trim the asparagus, then set aside.", "recipe": "braised-asparagus" },
-        { "when": "About 1 hr before eating", "text": "Potatoes on. Rice and finish the purée, then keep it warm.", "recipe": "pommes-puree" },
-        { "when": "As the beef comes out", "text": "Finish the jus. Braise the asparagus in 2–3 pans; Duxelles can take one.", "recipe": "braised-asparagus" }
+        { "when": "About 16:15", "text": "Slice the shallots and garlic. Reduce the stock and wine, then turn the heat off.", "recipe": "shallot-jus" },
+        { "when": "About 16:30", "text": "Trim the asparagus, then set aside.", "recipe": "braised-asparagus" },
+        { "when": "About 19:15", "text": "Potatoes on. Rice and finish the purée, then keep it warm.", "recipe": "pommes-puree" },
+        { "when": "About 20:15, as the beef comes out", "text": "Finish the jus. Braise the asparagus in 2–3 pans; Duxelles can take one.", "recipe": "braised-asparagus" }
       ]
     },
     {
       "key": "dessert", "name": "Dessert, apéro and table",
       "jobs": [
-        { "when": "First, before the oven gets busy", "text": "Bake both gâteaux, then cool and chill for 3 hr+.", "recipe": "tokyo-gateau" },
-        { "when": "Before 7:30pm", "text": "Lay the table. Apéro board out as guests arrive." },
-        { "when": "At dessert", "text": "Unmould and slice the gâteaux. Candles on the birthday cake.", "recipe": "tokyo-gateau" }
+        { "when": "By 15:00, before the oven gets busy", "text": "Bake both gâteaux, then cool and chill for 3 hr+.", "recipe": "tokyo-gateau" },
+        { "when": "By 19:00", "text": "Lay the table. Apéro board out as guests arrive." },
+        { "when": "At dessert, after 21:00", "text": "Unmould and slice the gâteaux. Candles on the birthday cake.", "recipe": "tokyo-gateau" }
       ]
     }
   ]
