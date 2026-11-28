@@ -67,16 +67,16 @@ import { applyChange, newExtraId } from "./board.js";
       : `<button class="pill" data-act="rename">Add your name</button>`;
   }
 
-  function claim(key, label) {
+  function claim(key) {
     const list = state.claims[key] ?? [];
     const mine = list.includes(me);
-    return `<div class="claim">${list.length ? `<span class="who">${list.map(esc).join(", ")}</span>` : ""}<button class="pill${mine ? " on" : ""}" data-claim="${esc(key)}">${mine ? "Leave" : label}</button></div>`;
+    return `<div class="claim">${list.length ? `<span class="who">${list.map(esc).join(", ")}</span>` : ""}<button class="pill${mine ? " on" : ""}" data-claim="${esc(key)}">${mine ? "✓ Yours" : "Claim this"}</button></div>`;
   }
 
   function renderStations() {
     document.getElementById("stations").innerHTML = menu.stations.map(s => `
       <div class="station">
-        <div class="row"><h3>${esc(s.name)}</h3>${claim(`station:${s.key}`, "Join")}</div>
+        <div class="row"><h3>${esc(s.name)}</h3>${claim(`station:${s.key}`)}</div>
         <ol>${s.jobs.map(j => `<li><em>${esc(j.when)}</em> ${esc(j.text)}${j.href ? ` <a href="${esc(j.href)}">${esc(j.title)}&nbsp;→</a>` : ""}</li>`).join("")}</ol>
       </div>`).join("");
   }
@@ -126,7 +126,7 @@ import { applyChange, newExtraId } from "./board.js";
       const shown = view === "todo" ? s.items.filter(i => status(i.id) !== "bought" || lingering(i.id)) : s.items;
       if (!shown.length && s.key === "added") return "";
       return `<div class="shop">
-        <div class="row"><div><h3>${s.map ? `<a href="${esc(s.map)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</h3>${s.where ? `<div class="where">${esc(s.where)}</div>` : ""}</div>${s.key === "added" ? "" : claim(`shop:${s.key}`, "I'll go")}</div>
+        <div class="row"><div><h3>${s.map ? `<a href="${esc(s.map)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</h3>${s.where ? `<div class="where">${esc(s.where)}</div>` : ""}</div>${s.key === "added" ? "" : claim(`shop:${s.key}`)}</div>
         ${shown.length ? `<ul>${shown.map(i => row(i, {
           done: status(i.id) === "bought",
           who: unsaved(i.id) ? "Not saved yet" : status(i.id) === "bought" ? by(i.id) : status(i.id) === "need" ? `Missing, said ${by(i.id)}` : i.added ? i.note : "",
@@ -140,7 +140,7 @@ import { applyChange, newExtraId } from "./board.js";
       const shown = view === "todo" ? items.filter(i => status(i.id) !== "have" || lingering(i.id)) : items;
       const moved = s.items.length - items.length;
       return `<div class="shop">
-        <div class="row"><div><h3>${esc(s.title)}</h3><div class="where">${esc(s.where)}. Tick what we have.</div></div>${claim(`shop:${s.key}`, "I'll check")}</div>
+        <div class="row"><div><h3>${esc(s.title)}</h3><div class="where">${esc(s.where)}. Tick what we have.</div></div>${claim(`shop:${s.key}`)}</div>
         ${shown.length ? `<ul>${shown.map(i => row(i, {
           done: status(i.id) === "have", who: unsaved(i.id) ? "Not saved yet" : status(i.id) === "have" ? by(i.id) : "",
           side: status(i.id) === "have" ? "" : "need", sideLabel: "Need to buy",
