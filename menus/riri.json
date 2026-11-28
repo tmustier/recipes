@@ -8,7 +8,6 @@
     { "recipe": "beef-wellington", "serves": 10 },
     { "recipe": "shallot-jus", "serves": 10 },
     { "recipe": "pommes-puree", "serves": 10 },
-    { "recipe": "braised-asparagus", "serves": 10 },
     { "recipe": "tokyo-gateau", "scale": 2, "label": "two loaves" }
   ],
 
@@ -33,7 +32,6 @@
     "Fresh thyme": { "fr": "Thym frais", "shop": "fruitier" },
     "Chives": { "fr": "Ciboulette", "shop": "fruitier" },
     "Potatoes": { "fr": "Pommes de terre à chair fondante (Agata, Monalisa)", "shop": "fruitier" },
-    "Green asparagus": { "fr": "Asperges vertes", "shop": "fruitier", "note": "Medium to thick spears, not the very thin ones" },
 
     "Puff pastry": { "fr": "Pâte feuilletée pur beurre", "shop": "supermarket", "note": "French rolls are ~230 g; patch them together" },
     "Phyllo dough": { "fr": "Pâte filo", "shop": "supermarket" },
@@ -44,7 +42,7 @@
     "Light cane sugar": { "fr": "Sucre de canne blond", "shop": "supermarket" },
     "Prepared horseradish": { "fr": "Raifort", "shop": "supermarket", "note": "If you can't find it, use more hot mustard" },
     "Beef stock": { "fr": "Bouillon de bœuf / fond de veau", "shop": "supermarket" },
-    "Chicken stock": { "fr": "Bouillon de volaille", "shop": "supermarket", "note": "For the asparagus (600 ml) and the purée" },
+    "Chicken stock": { "fr": "Bouillon de volaille", "shop": "supermarket", "note": "For the purée" },
     "Red wine": { "fr": "Vin rouge", "shop": "supermarket" },
     "Cognac": { "fr": "Cognac", "shop": "supermarket", "note": "Check the house first" },
 
@@ -101,9 +99,8 @@
       "key": "sides", "name": "Sides and sauce",
       "jobs": [
         { "when": "About 16:15", "text": "Slice the shallots and garlic. Reduce the stock and wine, then turn the heat off.", "recipe": "shallot-jus" },
-        { "when": "About 16:30", "text": "Trim the asparagus, then set aside.", "recipe": "braised-asparagus" },
         { "when": "About 19:15", "text": "Potatoes on. Rice and finish the purée, then keep it warm.", "recipe": "pommes-puree" },
-        { "when": "About 20:15, as the beef comes out", "text": "Finish the jus. Braise the asparagus in 2–3 pans; Duxelles can take one.", "recipe": "braised-asparagus" }
+        { "when": "About 20:15, as the beef comes out", "text": "Finish the jus.", "recipe": "shallot-jus" }
       ]
     },
     {
